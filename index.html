@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Q1M AR Dashboard - Live</title>
 <link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="50" y="50" text-anchor="middle" dominant-baseline="central" font-family="Arial,sans-serif" font-size="90" font-weight="bold" fill="%232E7D32">$</text></svg>'>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     --navy-deep: #10193B;
@@ -15,29 +15,31 @@
     --magenta-dark: #9B1FA6;
     --danger: #C0392B;
     --warn: #E8590C;
+    --gutter: clamp(20px, 5vw, 64px);
   }
-  body { margin:0; font-family:'Poppins', Arial, sans-serif; background:#F3F1F8; color:#1B1338; }
-  .container { max-width:1400px; margin:0 auto; background:#FFFFFF; box-shadow:0 0 40px rgba(16,25,59,0.08); }
+  body { margin:0; font-family:'Sora', Arial, sans-serif; background:#FFFFFF; color:#1B1338; }
+  .container { max-width:100%; margin:0; background:#FFFFFF; }
 
   .top-strip { height:6px; background:linear-gradient(90deg, var(--purple) 0%, var(--navy-mid) 50%, var(--blue-accent) 100%); }
 
-  .header { background:linear-gradient(135deg, var(--purple) 0%, var(--navy-mid) 55%, var(--navy-deep) 100%); color:#FFFFFF; padding:26px 32px; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; }
-  .header .eyebrow { font-size:12px; letter-spacing:2.5px; text-transform:uppercase; opacity:0.85; color:#E8B6E0; font-weight:600; }
-  .header .title { font-size:28px; font-weight:800; margin:8px 0 6px 0; }
+  .header { background:linear-gradient(135deg, var(--purple) 0%, var(--navy-mid) 55%, var(--navy-deep) 100%); color:#FFFFFF; padding:32px var(--gutter); display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; }
+  .header .eyebrow { font-size:12px; letter-spacing:3px; text-transform:uppercase; opacity:0.85; color:#E8B6E0; font-weight:600; }
+  .header .title { font-size:32px; font-weight:800; margin:10px 0 6px 0; letter-spacing:-0.5px; }
   .header .sub { font-size:13px; opacity:0.85; }
   .refresh-btn { background:linear-gradient(90deg, var(--magenta) 0%, var(--magenta-dark) 100%); color:#fff; border:none; padding:12px 24px; border-radius:999px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; height:fit-content; box-shadow:0 4px 14px rgba(196,23,156,0.35); }
   .refresh-btn:hover { filter:brightness(1.08); }
   .refresh-btn:disabled { opacity:0.6; cursor:default; }
 
-  .setup-banner { padding:18px 32px; background:#FBEFFA; border-bottom:2px solid var(--magenta); font-size:13px; color:#3A2050; line-height:1.6; }
+  .setup-banner { padding:20px var(--gutter); background:#FBEFFA; border-bottom:2px solid var(--magenta); font-size:13px; color:#3A2050; line-height:1.6; }
   .setup-banner code { background:#FFF; padding:2px 6px; border-radius:3px; border:1px solid #E4C6E0; }
   .setup-banner input { width:100%; max-width:640px; padding:9px 12px; font-size:13px; border:1px solid #D9C2E0; border-radius:8px; font-family:inherit; margin-top:6px; }
   .setup-banner .save-btn { background:linear-gradient(90deg, var(--magenta) 0%, var(--magenta-dark) 100%); color:#fff; border:none; padding:10px 20px; border-radius:999px; font-size:13px; font-weight:600; cursor:pointer; margin-top:10px; margin-right:8px; }
 
-  .error-banner { padding:14px 32px; background:#FDECEA; border-bottom:2px solid var(--danger); font-size:13px; color:#7A1F1F; }
+  .error-banner { padding:16px var(--gutter); background:#FDECEA; border-bottom:2px solid var(--danger); font-size:13px; color:#7A1F1F; }
 
-  .kpi-strip { display:flex; gap:14px; padding:24px 32px; background:#FFFFFF; border-bottom:1px solid #ECE7F5; flex-wrap:wrap; }
-  .kpi { flex:1; min-width:180px; padding:18px 20px; border-left:4px solid; border-radius:10px; background:#FAF8FD; }
+  .kpi-strip { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; padding:28px var(--gutter); background:#FFFFFF; border-bottom:1px solid #ECE7F5; }
+  .kpi { padding:20px 22px; border-left:4px solid; border-radius:12px; background:#FAF8FD; transition:transform 0.15s ease; }
+  .kpi:hover { transform:translateY(-2px); }
   .k-blue { border-color:var(--blue-accent); }
   .k-red { border-color:var(--danger); }
   .k-orange { border-color:var(--magenta); }
@@ -46,7 +48,7 @@
   .kpi .value { font-size:27px; font-weight:800; margin-top:6px; color:var(--navy-deep); }
   .kpi .sub { font-size:11px; color:#9A8FB0; margin-top:2px; }
 
-  .section { padding:24px 32px; border-bottom:1px solid #ECE7F5; }
+  .section { padding:28px var(--gutter); border-bottom:1px solid #ECE7F5; }
   .section-label { font-size:12px; text-transform:uppercase; letter-spacing:1.5px; color:var(--magenta); font-weight:700; margin-bottom:4px; }
   .section-sub { font-size:12px; color:#8A7EA0; margin-bottom:16px; }
 
@@ -75,7 +77,7 @@
 
   .footer { background:var(--navy-deep); color:#FFFFFF; text-align:center; padding:16px; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; }
 
-  .loading { padding:60px 32px; text-align:center; color:#9A8FB0; font-size:14px; }
+  .loading { padding:80px var(--gutter); text-align:center; color:#9A8FB0; font-size:14px; }
 
   @media print {
     body { background:#FFFFFF; }
@@ -358,7 +360,7 @@ function renderFlaggedBanners() {
   const wrap = document.getElementById('flaggedAccountsWrap');
   wrap.innerHTML = Object.keys(seen).map(cust => {
     const f = seen[cust];
-    return '<div style="margin:16px 32px 0 32px; padding:12px 16px; background:#FBEFFA; border-left:4px solid ' + (f.color || '#C4179C') + '; border-radius:8px; font-size:13px; color:#3A2050; line-height:1.5;">' +
+    return '<div style="margin:20px var(--gutter) 0 var(--gutter); padding:12px 16px; background:#FBEFFA; border-left:4px solid ' + (f.color || '#C4179C') + '; border-radius:8px; font-size:13px; color:#3A2050; line-height:1.5;">' +
       '<strong>Note - ' + cust + ' (' + f.label + '):</strong> ' + f.note + '</div>';
   }).join('');
 }

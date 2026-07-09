@@ -302,7 +302,8 @@ async function loadData() {
 
     AR_DATA = parsed.data.map(r => {
       const dueDate = parseDate(r.date_due);
-      const amount = parseFloat(r.amount) || 0;
+      const amountRaw = String(r.amount || '').replace(/[^0-9.\-]/g, '');
+      const amount = parseFloat(amountRaw) || 0;
       let daysOverdue = null;
       if (dueDate) {
         daysOverdue = Math.round((today - dueDate) / 86400000);

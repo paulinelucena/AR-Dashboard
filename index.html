@@ -225,7 +225,7 @@
     <!-- COLLECTION REPORTS -->
     <div class="section">
       <div class="section-label">Collection reports by rep</div>
-      <div class="section-sub">Generates an Excel file for the selected rep: a "60+ Days" tab (all their past-due invoices except legal accounts and not-yet-due invoices, with 60+ day rows highlighted) and a "Legal" tab (their legal-marked accounts).</div>
+      <div class="section-sub">Generates an Excel file for the selected rep: a "QMMonthlyCollectionsReport" tab (all their past-due invoices except legal accounts and not-yet-due invoices, with 60+ day rows highlighted) and a "Legal" tab (their legal-marked accounts).</div>
       <div class="table-controls">
         <select id="collectionRepSelect" style="min-width:240px;"><option value="">Select a rep...</option></select>
         <button class="refresh-btn" onclick="downloadRepReport()">Download report for this rep</button>
@@ -609,9 +609,9 @@ async function buildRepWorkbook(rep) {
   }
 
   const over59Count = nonLegal.filter(r => r.days_overdue != null && r.days_overdue > 59).length;
-  const ws1 = wb.addWorksheet('60+ Days');
+  const ws1 = wb.addWorksheet('QMMonthlyCollectionsReport');
   fillSheet(ws1, rep + ' — Accounts Receivable',
-    nonLegal.length + ' past-due invoices · ' + over59Count + ' highlighted as 60+ days overdue · legal and not-yet-due invoices excluded',
+    nonLegal.length + ' past-due invoices · ' + over59Count + ' highlighted as QMMonthlyCollectionsReport overdue · legal and not-yet-due invoices excluded',
     nonLegal, true);
 
   const ws2 = wb.addWorksheet('Legal');
@@ -707,9 +707,9 @@ async function buildCompanyWorkbook() {
   }
 
   const over59Count = nonLegal.filter(r => r.days_overdue != null && r.days_overdue > 59).length;
-  const ws1 = wb.addWorksheet('60+ Days');
+  const ws1 = wb.addWorksheet('QMMonthlyCollectionsReport');
   fillSheet(ws1, 'All Reps — Accounts Receivable',
-    nonLegal.length + ' past-due invoices across all reps · ' + over59Count + ' highlighted as 60+ days overdue · legal and not-yet-due invoices excluded',
+    nonLegal.length + ' past-due invoices across all reps · ' + over59Count + ' highlighted as QMMonthlyCollectionsReport overdue · legal and not-yet-due invoices excluded',
     nonLegal, true);
 
   const ws2 = wb.addWorksheet('Legal');

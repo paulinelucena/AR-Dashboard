@@ -226,6 +226,9 @@
         <button class="refresh-btn" onclick="downloadRepReport()">Download report for this rep</button>
         <button class="refresh-btn" style="background:linear-gradient(90deg, var(--navy-mid), var(--navy-deep));" onclick="downloadAllRepReports()">Download all reps (zip)</button>
       </div>
+      <div class="table-controls">
+        <button class="refresh-btn" style="background:linear-gradient(90deg, var(--purple), var(--blue-accent));" onclick="downloadCompanyReport()">Download company-wide report (all reps combined)</button>
+      </div>
       <div class="section-sub" id="collectionStatus"></div>
     </div>
 
@@ -634,6 +637,77 @@ async function downloadAllRepReports() {
   const zipBlob = await zip.generateAsync({type:'blob'});
   triggerBlobDownload(zipBlob, 'Rep_Collection_Reports.zip');
   statusEl.textContent = 'Downloaded all ' + reps.length + ' rep reports.';
+}
+
+async function buildCompanyWorkbook() {
+  const nonLegal = ALL_DATA.filter(r => !r.legal && r.days_overdue != null && r.days_overdue > 0)
+    .sort((a,b) => (a.rep||'').localeCompare(b.rep||'') || ((b.days_overdue||0) - (a.days_overdue||0)));
+  const legalRows = ALL_DATA.filter(r => r.legal)
+    .sort((a,b) => (a.rep||'').localeCompare(b.rep||'') || ((b.days_overdue||0) - (a.days_overdue||0)));
+
+  const wb = new ExcelJS.Workbook();
+  const headers = ['Rep','Customer','Invoice #','Invoice Date','Due Date','Amount','Ref #','Notes','Days Overdue (Age)'];
+  const colWidths = [20, 32, 14, 13, 13, 14, 14, 28, 16];
+
+  function fillSheet(ws, titleText, subText, rows, highlightOver59) {
+    ws.mergeCells(1,1,1,headers.length);
+    ws.getCell(1,1).value = titleText;
+    ws.getCell(1,1).font = { name:'Arial', bold:true, size:13, color:{argb:'FF10193B'} };
+
+    ws.mergeCells(2,1,2,headers.length);
+    ws.getCell(2,1).value = subText;
+    ws.getCell(2,1).font = { name:'Arial', italic:true, size:9, color:{argb:'FF7A6E93'} };
+
+    const headerRowIdx = 4;
+    headers.forEach((h, i) => {
+      const c = ws.getCell(headerRowIdx, i+1);
+      c.value = h;
+      c.font = { name:'Arial', bold:true, size:11, color:{argb:'FFFFFFFF'} };
+      c.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FF10193B'} };
+      c.alignment = { horizontal:'center' };
+    });
+
+    rows.forEach((r, idx) => {
+      const rowIdx = headerRowIdx + 1 + idx;
+      const values = [r.rep, r.customer, r.invoice_num, r.invoice_date, r.date_due, r.amount, r.ref_num, r.notes, r.days_overdue];
+      values.forEach((v, i) => {
+        const c = ws.getCell(rowIdx, i+1);
+        c.value = v;
+        c.font = { name:'Arial', size:10 };
+        if (i === 5) c.numFmt = '$#,##0.00';
+        if (i === 8) c.alignment = { horizontal:'center' };
+      });
+      const isOver59 = highlightOver59 && r.days_overdue != null && r.days_overdue > 59;
+      if (isOver59) {
+        for (let i=1;i<=headers.length;i++){
+          ws.getCell(rowIdx, i).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFBD4C4'} };
+        }
+      }
+    });
+
+    ws.columns = colWidths.map(w => ({ width: w }));
+    ws.views = [{ state:'frozen', ySplit: headerRowIdx }];
+  }
+
+  const over59Count = nonLegal.filter(r => r.days_overdue != null && r.days_overdue > 59).length;
+  const ws1 = wb.addWorksheet('60+ Days');
+  fillSheet(ws1, 'All Reps — Accounts Receivable',
+    nonLegal.length + ' past-due invoices across all reps · ' + over59Count + ' highlighted as 60+ days overdue · legal and not-yet-due invoices excluded',
+    nonLegal, true);
+
+  const ws2 = wb.addWorksheet('Legal');
+  fillSheet(ws2, 'All Reps — Legal Accounts', legalRows.length + ' invoices marked as Legal, company-wide', legalRows, false);
+
+  return wb;
+}
+
+async function downloadCompanyReport() {
+  const statusEl = document.getElementById('collectionStatus');
+  statusEl.textContent = 'Building company-wide report...';
+  const wb = await buildCompanyWorkbook();
+  const buf = await wb.xlsx.writeBuffer();
+  triggerBlobDownload(new Blob([buf], {type:'application/octet-stream'}), 'Company_Wide_Collection_Report.xlsx');
+  statusEl.textContent = 'Downloaded the company-wide collection report.';
 }
 
 if (SHEET_CSV_URL) { document.getElementById('sheetUrlInput').value = SHEET_CSV_URL; }

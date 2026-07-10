@@ -565,8 +565,8 @@ async function buildRepWorkbook(rep) {
     .sort((a,b) => (b.days_overdue||0) - (a.days_overdue||0));
 
   const wb = new ExcelJS.Workbook();
-  const headers = ['Customer','Invoice #','Invoice Date','Due Date','Amount','Ref #','Notes','Days Overdue (Age)'];
-  const colWidths = [32, 14, 13, 13, 14, 14, 28, 16];
+  const headers = ['Customer','Invoice Date','Invoice Number','Date Due','Amount Due','Sales Rep','No. Days Overdue','Reference Number','Notes'];
+  const colWidths = [32, 13, 14, 13, 14, 20, 16, 16, 28];
 
   function fillSheet(ws, titleText, subText, rows, highlightOver59) {
     ws.mergeCells(1,1,1,headers.length);
@@ -588,18 +588,18 @@ async function buildRepWorkbook(rep) {
 
     rows.forEach((r, idx) => {
       const rowIdx = headerRowIdx + 1 + idx;
-      const values = [r.customer, r.invoice_num, r.invoice_date, r.date_due, r.amount, r.ref_num, r.notes, r.days_overdue];
+      const values = [r.customer, r.invoice_date, r.invoice_num, r.date_due, r.amount, r.rep, r.days_overdue, r.ref_num, r.notes];
       values.forEach((v, i) => {
         const c = ws.getCell(rowIdx, i+1);
         c.value = v;
         c.font = { name:'Arial', size:10 };
         if (i === 4) c.numFmt = '$#,##0.00';
-        if (i === 7) c.alignment = { horizontal:'center' };
+        if (i === 6) c.alignment = { horizontal:'center' };
       });
       const isOver59 = highlightOver59 && r.days_overdue != null && r.days_overdue > 59;
       if (isOver59) {
         for (let i=1;i<=headers.length;i++){
-          ws.getCell(rowIdx, i).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFBD4C4'} };
+          ws.getCell(rowIdx, i).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFFFF00'} };
         }
       }
     });
@@ -663,8 +663,8 @@ async function buildCompanyWorkbook() {
     .sort((a,b) => (a.rep||'').localeCompare(b.rep||'') || ((b.days_overdue||0) - (a.days_overdue||0)));
 
   const wb = new ExcelJS.Workbook();
-  const headers = ['Rep','Customer','Invoice #','Invoice Date','Due Date','Amount','Ref #','Notes','Days Overdue (Age)'];
-  const colWidths = [20, 32, 14, 13, 13, 14, 14, 28, 16];
+  const headers = ['Customer','Invoice Date','Invoice Number','Date Due','Amount Due','Sales Rep','No. Days Overdue','Reference Number','Notes'];
+  const colWidths = [32, 13, 14, 13, 14, 20, 16, 16, 28];
 
   function fillSheet(ws, titleText, subText, rows, highlightOver59) {
     ws.mergeCells(1,1,1,headers.length);
@@ -686,18 +686,18 @@ async function buildCompanyWorkbook() {
 
     rows.forEach((r, idx) => {
       const rowIdx = headerRowIdx + 1 + idx;
-      const values = [r.rep, r.customer, r.invoice_num, r.invoice_date, r.date_due, r.amount, r.ref_num, r.notes, r.days_overdue];
+      const values = [r.customer, r.invoice_date, r.invoice_num, r.date_due, r.amount, r.rep, r.days_overdue, r.ref_num, r.notes];
       values.forEach((v, i) => {
         const c = ws.getCell(rowIdx, i+1);
         c.value = v;
         c.font = { name:'Arial', size:10 };
-        if (i === 5) c.numFmt = '$#,##0.00';
-        if (i === 8) c.alignment = { horizontal:'center' };
+        if (i === 4) c.numFmt = '$#,##0.00';
+        if (i === 6) c.alignment = { horizontal:'center' };
       });
       const isOver59 = highlightOver59 && r.days_overdue != null && r.days_overdue > 59;
       if (isOver59) {
         for (let i=1;i<=headers.length;i++){
-          ws.getCell(rowIdx, i).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFBD4C4'} };
+          ws.getCell(rowIdx, i).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFFFF00'} };
         }
       }
     });

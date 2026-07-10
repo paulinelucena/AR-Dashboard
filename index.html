@@ -220,7 +220,7 @@
     <!-- COLLECTION REPORTS -->
     <div class="section">
       <div class="section-label">Collection reports by rep</div>
-      <div class="section-sub">Generates an Excel file for the selected rep: a "60+ Days" tab (all their invoices except legal accounts, with 60+ day rows highlighted) and a "Legal" tab (their legal-marked accounts). Uses every invoice in the sheet, not just overdue ones.</div>
+      <div class="section-sub">Generates an Excel file for the selected rep: a "60+ Days" tab (all their past-due invoices except legal accounts and not-yet-due invoices, with 60+ day rows highlighted) and a "Legal" tab (their legal-marked accounts).</div>
       <div class="table-controls">
         <select id="collectionRepSelect" style="min-width:240px;"><option value="">Select a rep...</option></select>
         <button class="refresh-btn" onclick="downloadRepReport()">Download report for this rep</button>
@@ -539,7 +539,7 @@ function safeFileName(name) {
 
 async function buildRepWorkbook(rep) {
   const repRows = ALL_DATA.filter(r => r.rep === rep);
-  const nonLegal = repRows.filter(r => !r.legal)
+  const nonLegal = repRows.filter(r => !r.legal && r.days_overdue != null && r.days_overdue > 0)
     .sort((a,b) => (b.days_overdue||0) - (a.days_overdue||0));
   const legalRows = repRows.filter(r => r.legal)
     .sort((a,b) => (b.days_overdue||0) - (a.days_overdue||0));
@@ -591,7 +591,7 @@ async function buildRepWorkbook(rep) {
   const over59Count = nonLegal.filter(r => r.days_overdue != null && r.days_overdue > 59).length;
   const ws1 = wb.addWorksheet('60+ Days');
   fillSheet(ws1, rep + ' — Accounts Receivable',
-    nonLegal.length + ' invoices · ' + over59Count + ' highlighted as 60+ days overdue · legal accounts excluded',
+    nonLegal.length + ' past-due invoices · ' + over59Count + ' highlighted as 60+ days overdue · legal and not-yet-due invoices excluded',
     nonLegal, true);
 
   const ws2 = wb.addWorksheet('Legal');

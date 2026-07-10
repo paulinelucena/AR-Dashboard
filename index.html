@@ -103,6 +103,8 @@
     box-sizing: border-box;
   }
   .section.floating-collection .section-sub { width: 100%; }
+  .section.floating-collection #collectionDragHandle { cursor: move; }
+  .section.floating-collection.dragging { user-select: none; }
 
   /* Minimal Top-Right Action Button */
   .section-header-row {
@@ -292,7 +294,7 @@
 
     <!-- COLLECTION REPORTS -->
     <div class="section" id="secCollectionReports">
-      <div class="section-header-row">
+      <div class="section-header-row" id="collectionDragHandle">
         <div>
           <div class="section-label">Collection reports by rep</div>
           <div class="section-sub">Generates an Excel file for the selected rep: a "60+ Days" tab (all their past-due invoices except legal accounts and not-yet-due invoices, with 60+ day rows highlighted) and a "Legal" tab (their legal-marked accounts).</div>
@@ -381,12 +383,58 @@ function toggleFreezeCollection() {
     el.classList.remove('floating-collection');
     btn.classList.remove('active');
     btn.textContent = 'Freeze Window';
+    el.style.left = ''; el.style.top = ''; el.style.right = ''; el.style.bottom = '';
   } else {
     el.classList.add('floating-collection');
     btn.classList.add('active');
     btn.textContent = 'Unfreeze Window';
   }
 }
+
+(function enableCollectionDrag() {
+  const handle = document.getElementById('collectionDragHandle');
+  const panel = document.getElementById('secCollectionReports');
+  if (!handle || !panel) return;
+  let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+
+  handle.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.minimal-freeze-btn')) return;
+    if (!panel.classList.contains('floating-collection')) return;
+    const rect = panel.getBoundingClientRect();
+    panel.style.left = rect.left + 'px';
+    panel.style.top = rect.top + 'px';
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+    dragging = true;
+    startX = e.clientX; startY = e.clientY;
+    startLeft = rect.left; startTop = rect.top;
+    panel.classList.add('dragging');
+    handle.setPointerCapture(e.pointerId);
+  });
+
+  handle.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    let newLeft = startLeft + dx;
+    let newTop = startTop + dy;
+    const maxLeft = window.innerWidth - panel.offsetWidth - 8;
+    const maxTop = window.innerHeight - panel.offsetHeight - 8;
+    newLeft = Math.max(8, Math.min(newLeft, maxLeft));
+    newTop = Math.max(8, Math.min(newTop, maxTop));
+    panel.style.left = newLeft + 'px';
+    panel.style.top = newTop + 'px';
+  });
+
+  function stopDrag(e) {
+    if (!dragging) return;
+    dragging = false;
+    panel.classList.remove('dragging');
+    try { handle.releasePointerCapture(e.pointerId); } catch(err) {}
+  }
+  handle.addEventListener('pointerup', stopDrag);
+  handle.addEventListener('pointercancel', stopDrag);
+})();
 
 async function loadData() {
   if (!SHEET_CSV_URL) {

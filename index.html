@@ -341,7 +341,7 @@ async function loadData() {
         flag_label: (r.flag_label || '').trim(),
         flag_color: (r.flag_color || '').trim(),
         flag_note: (r.flag_note || '').trim(),
-        legal: ((r.legal || '').trim().toLowerCase() === 'legal'),
+        legal: ((r.legal || '').trim().toLowerCase() === 'legal') || /legal/i.test(r.notes || ''),
         days_overdue: daysOverdue,
       };
     }).filter(r => r.customer && r.date_due && r.days_overdue !== null);

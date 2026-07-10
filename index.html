@@ -630,16 +630,8 @@ async function buildRepWorkbook(rep) {
   const legalHeaders = ['Customer','Invoice Date','Invoice Number','Date Due','Amount Due','No. Days Overdue','Reference Number','Note'];
   const legalColWidths = [32, 13, 14, 13, 14, 16, 16, 28];
 
-  function fillLegalSheet(ws, titleText, subText, rows) {
-    ws.mergeCells(1,1,1,legalHeaders.length);
-    ws.getCell(1,1).value = titleText;
-    ws.getCell(1,1).font = { name:'Arial', bold:true, size:13, color:{argb:'FF10193B'} };
-
-    ws.mergeCells(2,1,2,legalHeaders.length);
-    ws.getCell(2,1).value = subText;
-    ws.getCell(2,1).font = { name:'Arial', italic:true, size:9, color:{argb:'FF7A6E93'} };
-
-    const headerRowIdx = 4;
+  function fillLegalSheet(ws, rows) {
+    const headerRowIdx = 1;
     legalHeaders.forEach((h, i) => {
       const c = ws.getCell(headerRowIdx, i+1);
       c.value = h;
@@ -665,7 +657,7 @@ async function buildRepWorkbook(rep) {
   }
 
   const ws2 = wb.addWorksheet('Legal');
-  fillLegalSheet(ws2, rep + ' — Legal Accounts', legalRows.length + ' invoices marked as Legal for this rep', legalRows);
+  fillLegalSheet(ws2, legalRows);
 
   return wb;
 }
@@ -778,16 +770,8 @@ async function buildCompanyWorkbook() {
   const legalHeaders = ['Rep','Customer','Invoice #','Invoice Date','Due Date','Amount','Ref #','Notes','Days Overdue (Age)'];
   const legalColWidths = [20, 32, 14, 13, 13, 14, 14, 28, 16];
 
-  function fillLegalSheet(ws, titleText, subText, rows) {
-    ws.mergeCells(1,1,1,legalHeaders.length);
-    ws.getCell(1,1).value = titleText;
-    ws.getCell(1,1).font = { name:'Arial', bold:true, size:13, color:{argb:'FF10193B'} };
-
-    ws.mergeCells(2,1,2,legalHeaders.length);
-    ws.getCell(2,1).value = subText;
-    ws.getCell(2,1).font = { name:'Arial', italic:true, size:9, color:{argb:'FF7A6E93'} };
-
-    const headerRowIdx = 4;
+  function fillLegalSheet(ws, rows) {
+    const headerRowIdx = 1;
     legalHeaders.forEach((h, i) => {
       const c = ws.getCell(headerRowIdx, i+1);
       c.value = h;
@@ -813,7 +797,7 @@ async function buildCompanyWorkbook() {
   }
 
   const ws2 = wb.addWorksheet('Legal');
-  fillLegalSheet(ws2, 'All Reps — Legal Accounts', legalRows.length + ' invoices marked as Legal, company-wide', legalRows);
+  fillLegalSheet(ws2, legalRows);
 
   return wb;
 }

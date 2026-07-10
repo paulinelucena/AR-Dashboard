@@ -656,8 +656,10 @@ async function buildRepWorkbook(rep) {
     ws.views = [{ state:'frozen', ySplit: headerRowIdx }];
   }
 
-  const ws2 = wb.addWorksheet('Legal');
-  fillLegalSheet(ws2, legalRows);
+  if (legalRows.length > 0) {
+    const ws2 = wb.addWorksheet('Legal');
+    fillLegalSheet(ws2, legalRows);
+  }
 
   return wb;
 }

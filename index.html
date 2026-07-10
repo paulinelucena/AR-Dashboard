@@ -610,7 +610,7 @@ async function buildRepWorkbook(rep) {
 
   const over59Count = nonLegal.filter(r => r.days_overdue != null && r.days_overdue > 59).length;
   const ws1 = wb.addWorksheet('QMMonthlyCollectionsReport');
-  fillSheet(ws1, rep + ' — Accounts Receivable',
+  fillSheet(ws1, rep + ' — Collection Report',
     nonLegal.length + ' past-due invoices · ' + over59Count + ' highlighted as QMMonthlyCollectionsReport overdue · legal and not-yet-due invoices excluded',
     nonLegal, true);
 
@@ -708,7 +708,7 @@ async function buildCompanyWorkbook() {
 
   const over59Count = nonLegal.filter(r => r.days_overdue != null && r.days_overdue > 59).length;
   const ws1 = wb.addWorksheet('QMMonthlyCollectionsReport');
-  fillSheet(ws1, 'All Reps — Accounts Receivable',
+  fillSheet(ws1, 'All Reps — Collection Report',
     nonLegal.length + ' past-due invoices across all reps · ' + over59Count + ' highlighted as QMMonthlyCollectionsReport overdue · legal and not-yet-due invoices excluded',
     nonLegal, true);
 

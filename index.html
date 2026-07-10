@@ -94,7 +94,7 @@
   <div class="header">
     <div>
       <div class="eyebrow">Q1M AR Dashboard</div>
-      <div class="title" id="headerTitle">Live from Q1Media AR Aging Details Sheet</div>
+      <div class="title" id="headerTitle">Live from Google Sheets</div>
       <div class="sub" id="headerSub">Overdue invoices only (past due date) · Data pulled live from your published Google Sheet</div>
     </div>
     <button class="refresh-btn" id="refreshBtn" onclick="loadData()">Refresh data</button>
@@ -217,14 +217,28 @@
       </div>
     </div>
 
+    <!-- COLLECTION REPORTS -->
+    <div class="section">
+      <div class="section-label">Collection reports by rep</div>
+      <div class="section-sub">Generates an Excel file for the selected rep: a "60+ Days" tab (all their invoices except legal accounts, with 60+ day rows highlighted) and a "Legal" tab (their legal-marked accounts). Uses every invoice in the sheet, not just overdue ones.</div>
+      <div class="table-controls">
+        <select id="collectionRepSelect" style="min-width:240px;"><option value="">Select a rep...</option></select>
+        <button class="refresh-btn" onclick="downloadRepReport()">Download report for this rep</button>
+        <button class="refresh-btn" style="background:linear-gradient(90deg, var(--navy-mid), var(--navy-deep));" onclick="downloadAllRepReports()">Download all reps (zip)</button>
+      </div>
+      <div class="section-sub" id="collectionStatus"></div>
+    </div>
+
   </div>
 
-  <div class="footer">Q1M AR Dashboard · Q1Media AR Aging Details Sheets</div>
+  <div class="footer">Q1M AR Dashboard · Live data from Google Sheets</div>
 
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
 /* =========================================================
    CONFIG
@@ -238,6 +252,7 @@ const BUCKET_ORDER = ["1-30 days", "31-60 days", "61-90 days", "90+ days"];
 const BUCKET_COLORS = {"1-30 days": "#5B2A8C", "31-60 days": "#C4179C", "61-90 days": "#E8590C", "90+ days": "#C0392B"};
 
 let AR_DATA = [];
+let ALL_DATA = [];
 let sortCol = 'amount';
 let sortAsc = false;
 let chartInstance = null;
@@ -300,7 +315,7 @@ async function loadData() {
     const today = new Date();
     today.setHours(0,0,0,0);
 
-    AR_DATA = parsed.data.map(r => {
+    ALL_DATA = parsed.data.map(r => {
       const dueDate = parseDate(r.date_due);
       const amountRaw = String(r.amount || '').replace(/[^0-9.\-]/g, '');
       const amount = parseFloat(amountRaw) || 0;
@@ -320,13 +335,16 @@ async function loadData() {
         flag_label: (r.flag_label || '').trim(),
         flag_color: (r.flag_color || '').trim(),
         flag_note: (r.flag_note || '').trim(),
+        legal: ((r.legal || '').trim().toLowerCase() === 'legal'),
         days_overdue: daysOverdue,
       };
-    }).filter(r => r.customer && r.date_due && r.days_overdue !== null && r.days_overdue > 0);
+    }).filter(r => r.customer && r.date_due && r.days_overdue !== null);
 
+    AR_DATA = ALL_DATA.filter(r => r.days_overdue > 0);
     AR_DATA.forEach(r => { r.bucket = bucketFor(r.days_overdue); });
 
     renderAll();
+    populateCollectionRepSelect();
     document.getElementById('loadingIndicator').style.display = 'none';
     document.getElementById('dashboardContent').style.display = 'block';
     document.getElementById('headerSub').textContent =
@@ -505,6 +523,118 @@ document.querySelectorAll('#fullTable th[data-sort]').forEach(th => {
     renderTable();
   });
 });
+
+function populateCollectionRepSelect() {
+  const sel = document.getElementById('collectionRepSelect');
+  const current = sel.value;
+  const reps = [...new Set(ALL_DATA.map(r => r.rep).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Select a rep...</option>' +
+    reps.map(r => '<option value="' + r.replace(/"/g,'&quot;') + '">' + r + '</option>').join('');
+  if (reps.includes(current)) sel.value = current;
+}
+
+function safeFileName(name) {
+  return (name || 'Unassigned').replace(/[^A-Za-z0-9 _-]/g, '').trim().replace(/\s+/g, '_');
+}
+
+async function buildRepWorkbook(rep) {
+  const repRows = ALL_DATA.filter(r => r.rep === rep);
+  const nonLegal = repRows.filter(r => !r.legal)
+    .sort((a,b) => (b.days_overdue||0) - (a.days_overdue||0));
+  const legalRows = repRows.filter(r => r.legal)
+    .sort((a,b) => (b.days_overdue||0) - (a.days_overdue||0));
+
+  const wb = new ExcelJS.Workbook();
+  const headers = ['Customer','Invoice #','Invoice Date','Due Date','Amount','Ref #','Notes','Days Overdue (Age)'];
+  const colWidths = [32, 14, 13, 13, 14, 14, 28, 16];
+
+  function fillSheet(ws, titleText, subText, rows, highlightOver59) {
+    ws.mergeCells(1,1,1,headers.length);
+    ws.getCell(1,1).value = titleText;
+    ws.getCell(1,1).font = { name:'Arial', bold:true, size:13, color:{argb:'FF10193B'} };
+
+    ws.mergeCells(2,1,2,headers.length);
+    ws.getCell(2,1).value = subText;
+    ws.getCell(2,1).font = { name:'Arial', italic:true, size:9, color:{argb:'FF7A6E93'} };
+
+    const headerRowIdx = 4;
+    headers.forEach((h, i) => {
+      const c = ws.getCell(headerRowIdx, i+1);
+      c.value = h;
+      c.font = { name:'Arial', bold:true, size:11, color:{argb:'FFFFFFFF'} };
+      c.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FF10193B'} };
+      c.alignment = { horizontal:'center' };
+    });
+
+    rows.forEach((r, idx) => {
+      const rowIdx = headerRowIdx + 1 + idx;
+      const values = [r.customer, r.invoice_num, r.invoice_date, r.date_due, r.amount, r.ref_num, r.notes, r.days_overdue];
+      values.forEach((v, i) => {
+        const c = ws.getCell(rowIdx, i+1);
+        c.value = v;
+        c.font = { name:'Arial', size:10 };
+        if (i === 4) c.numFmt = '$#,##0.00';
+        if (i === 7) c.alignment = { horizontal:'center' };
+      });
+      const isOver59 = highlightOver59 && r.days_overdue != null && r.days_overdue > 59;
+      if (isOver59) {
+        for (let i=1;i<=headers.length;i++){
+          ws.getCell(rowIdx, i).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFBD4C4'} };
+        }
+      }
+    });
+
+    ws.columns = colWidths.map(w => ({ width: w }));
+    ws.views = [{ state:'frozen', ySplit: headerRowIdx }];
+  }
+
+  const over59Count = nonLegal.filter(r => r.days_overdue != null && r.days_overdue > 59).length;
+  const ws1 = wb.addWorksheet('60+ Days');
+  fillSheet(ws1, rep + ' — Accounts Receivable',
+    nonLegal.length + ' invoices · ' + over59Count + ' highlighted as 60+ days overdue · legal accounts excluded',
+    nonLegal, true);
+
+  const ws2 = wb.addWorksheet('Legal');
+  fillSheet(ws2, rep + ' — Legal Accounts', legalRows.length + ' invoices marked as Legal for this rep', legalRows, false);
+
+  return wb;
+}
+
+function triggerBlobDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function downloadRepReport() {
+  const rep = document.getElementById('collectionRepSelect').value;
+  const statusEl = document.getElementById('collectionStatus');
+  if (!rep) { statusEl.textContent = 'Please select a rep first.'; return; }
+  statusEl.textContent = 'Building report for ' + rep + '...';
+  const wb = await buildRepWorkbook(rep);
+  const buf = await wb.xlsx.writeBuffer();
+  triggerBlobDownload(new Blob([buf], {type:'application/octet-stream'}), safeFileName(rep) + '_Collection_Report.xlsx');
+  statusEl.textContent = 'Downloaded ' + rep + '\'s collection report.';
+}
+
+async function downloadAllRepReports() {
+  const statusEl = document.getElementById('collectionStatus');
+  const reps = [...new Set(ALL_DATA.map(r => r.rep).filter(Boolean))].sort();
+  const zip = new JSZip();
+  for (let i=0; i<reps.length; i++) {
+    const rep = reps[i];
+    statusEl.textContent = 'Building ' + (i+1) + ' of ' + reps.length + ': ' + rep + '...';
+    const wb = await buildRepWorkbook(rep);
+    const buf = await wb.xlsx.writeBuffer();
+    zip.file(safeFileName(rep) + '_Collection_Report.xlsx', buf);
+  }
+  statusEl.textContent = 'Zipping ' + reps.length + ' reports...';
+  const zipBlob = await zip.generateAsync({type:'blob'});
+  triggerBlobDownload(zipBlob, 'Rep_Collection_Reports.zip');
+  statusEl.textContent = 'Downloaded all ' + reps.length + ' rep reports.';
+}
 
 if (SHEET_CSV_URL) { document.getElementById('sheetUrlInput').value = SHEET_CSV_URL; }
 loadData();

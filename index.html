@@ -195,6 +195,11 @@
         <input type="text" id="searchInput" placeholder="Search customer, invoice #, notes...">
         <select id="repFilter"><option value="">All reps</option></select>
         <select id="bucketFilter"><option value="">All buckets</option></select>
+        <select id="legalFilter">
+          <option value="">All accounts</option>
+          <option value="legal">Legal only</option>
+          <option value="nonlegal">Exclude legal</option>
+        </select>
       </div>
       <div class="table-scroll">
         <table class="full-table" id="fullTable">
@@ -482,9 +487,12 @@ function renderTable() {
   const q = (document.getElementById('searchInput').value || '').toLowerCase();
   const rep = document.getElementById('repFilter').value;
   const bkt = document.getElementById('bucketFilter').value;
+  const legalFilterVal = document.getElementById('legalFilter').value;
   let filtered = AR_DATA.filter(r => {
     if (rep && r.rep !== rep) return false;
     if (bkt && r.bucket !== bkt) return false;
+    if (legalFilterVal === 'legal' && !r.legal) return false;
+    if (legalFilterVal === 'nonlegal' && r.legal) return false;
     if (q && !(String(r.customer).toLowerCase().includes(q) ||
               String(r.invoice_num).toLowerCase().includes(q) ||
               String(r.ref_num).toLowerCase().includes(q) ||
@@ -517,6 +525,7 @@ function renderTable() {
 document.getElementById('searchInput').addEventListener('input', renderTable);
 document.getElementById('repFilter').addEventListener('change', renderTable);
 document.getElementById('bucketFilter').addEventListener('change', renderTable);
+document.getElementById('legalFilter').addEventListener('change', renderTable);
 document.querySelectorAll('#fullTable th[data-sort]').forEach(th => {
   th.addEventListener('click', () => {
     const col = th.dataset.sort;

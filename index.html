@@ -103,7 +103,7 @@
     box-sizing: border-box;
   }
   .section.floating-collection .section-sub { width: 100%; }
-  .section.floating-collection #collectionDragHandle { cursor: move; }
+  .section.floating-collection #collectionDragHandle { cursor: move; touch-action: none; -webkit-user-select: none; user-select: none; }
   .section.floating-collection.dragging { user-select: none; }
 
   /* Minimal Top-Right Action Button */
@@ -222,7 +222,7 @@
     </div>
 
     <!-- TOP CUSTOMERS (Accordion Component) -->
-    <div class="section" id="secTopCustomers">
+    <div class="section collapsed" id="secTopCustomers">
       <div class="accordion-header" onclick="toggleAccordion('secTopCustomers')">
         <div class="section-label">Top 20 customers by exposure</div>
         <div class="section-sub">Sorted by total overdue amount due (highest to lowest). Max days &gt; 90 highlighted in red.</div>
@@ -238,7 +238,7 @@
     </div>
 
     <!-- REPS (Accordion Component) -->
-    <div class="section" id="secRepsBreakdown">
+    <div class="section collapsed" id="secRepsBreakdown">
       <div class="accordion-header" onclick="toggleAccordion('secRepsBreakdown')">
         <div class="section-label">Sales rep breakdown</div>
         <div class="section-sub">Ranked by book of overdue AR (past due invoices only). 90+ % over 30% highlighted in red.</div>
@@ -254,7 +254,7 @@
     </div>
 
     <!-- FULL TABLE (Accordion Component) -->
-    <div class="section" id="secAllInvoices">
+    <div class="section collapsed" id="secAllInvoices">
       <div class="accordion-header" onclick="toggleAccordion('secAllInvoices')">
         <div class="section-label">All overdue invoices</div>
         <div class="section-sub" id="rowCount">-- invoices</div>
@@ -400,6 +400,7 @@ function toggleFreezeCollection() {
   handle.addEventListener('pointerdown', (e) => {
     if (e.target.closest('.minimal-freeze-btn')) return;
     if (!panel.classList.contains('floating-collection')) return;
+    e.preventDefault();
     const rect = panel.getBoundingClientRect();
     panel.style.left = rect.left + 'px';
     panel.style.top = rect.top + 'px';
@@ -409,10 +410,10 @@ function toggleFreezeCollection() {
     startX = e.clientX; startY = e.clientY;
     startLeft = rect.left; startTop = rect.top;
     panel.classList.add('dragging');
-    handle.setPointerCapture(e.pointerId);
+    try { handle.setPointerCapture(e.pointerId); } catch(err) {}
   });
 
-  handle.addEventListener('pointermove', (e) => {
+  document.addEventListener('pointermove', (e) => {
     if (!dragging) return;
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
@@ -432,8 +433,8 @@ function toggleFreezeCollection() {
     panel.classList.remove('dragging');
     try { handle.releasePointerCapture(e.pointerId); } catch(err) {}
   }
-  handle.addEventListener('pointerup', stopDrag);
-  handle.addEventListener('pointercancel', stopDrag);
+  document.addEventListener('pointerup', stopDrag);
+  document.addEventListener('pointercancel', stopDrag);
 })();
 
 async function loadData() {

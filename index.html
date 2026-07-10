@@ -538,6 +538,16 @@ function safeFileName(name) {
   return (name || 'Unassigned').replace(/[^A-Za-z0-9 _-]/g, '').trim().replace(/\s+/g, '_');
 }
 
+function reportDatePrefix() {
+  const d = new Date();
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const month = monthNames[d.getMonth()];
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  const yyyy = d.getFullYear();
+  return 'Q1Media_' + month + ' ' + mm + '.' + dd + '.' + yyyy + ' Collections Report';
+}
+
 async function buildRepWorkbook(rep) {
   const repRows = ALL_DATA.filter(r => r.rep === rep);
   const nonLegal = repRows.filter(r => !r.legal && r.days_overdue != null && r.days_overdue > 0)
@@ -616,7 +626,7 @@ async function downloadRepReport() {
   statusEl.textContent = 'Building report for ' + rep + '...';
   const wb = await buildRepWorkbook(rep);
   const buf = await wb.xlsx.writeBuffer();
-  triggerBlobDownload(new Blob([buf], {type:'application/octet-stream'}), safeFileName(rep) + '_Collection_Report.xlsx');
+  triggerBlobDownload(new Blob([buf], {type:'application/octet-stream'}), reportDatePrefix() + ' - ' + rep + '.xlsx');
   statusEl.textContent = 'Downloaded ' + rep + '\'s collection report.';
 }
 
@@ -629,11 +639,11 @@ async function downloadAllRepReports() {
     statusEl.textContent = 'Building ' + (i+1) + ' of ' + reps.length + ': ' + rep + '...';
     const wb = await buildRepWorkbook(rep);
     const buf = await wb.xlsx.writeBuffer();
-    zip.file(safeFileName(rep) + '_Collection_Report.xlsx', buf);
+    zip.file(reportDatePrefix() + ' - ' + rep + '.xlsx', buf);
   }
   statusEl.textContent = 'Zipping ' + reps.length + ' reports...';
   const zipBlob = await zip.generateAsync({type:'blob'});
-  triggerBlobDownload(zipBlob, 'Rep_Collection_Reports.zip');
+  triggerBlobDownload(zipBlob, reportDatePrefix() + ' - All Reps.zip');
   statusEl.textContent = 'Downloaded all ' + reps.length + ' rep reports.';
 }
 
@@ -704,7 +714,7 @@ async function downloadCompanyReport() {
   statusEl.textContent = 'Building company-wide report...';
   const wb = await buildCompanyWorkbook();
   const buf = await wb.xlsx.writeBuffer();
-  triggerBlobDownload(new Blob([buf], {type:'application/octet-stream'}), 'Company_Wide_Collection_Report.xlsx');
+  triggerBlobDownload(new Blob([buf], {type:'application/octet-stream'}), reportDatePrefix() + '.xlsx');
   statusEl.textContent = 'Downloaded the company-wide collection report.';
 }
 

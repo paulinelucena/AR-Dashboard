@@ -49,8 +49,16 @@
   .kpi .sub { font-size:11px; color:#9A8FB0; margin-top:2px; }
 
   .section { padding:28px var(--gutter); border-bottom:1px solid #ECE7F5; }
+  
+  /* Accordion Custom Styling */
+  .accordion-header { cursor: pointer; user-select: none; display: flex; flex-direction: column; position: relative; }
+  .accordion-header::after { content: '▼'; position: absolute; right: 0; top: 4px; font-size: 12px; color: var(--magenta); transition: transform 0.2s ease; }
+  .section.collapsed .accordion-header::after { transform: rotate(-90deg); }
+  .accordion-content { display: block; }
+  .section.collapsed .accordion-content { display: none; }
+
   .section-label { font-size:12px; text-transform:uppercase; letter-spacing:1.5px; color:var(--magenta); font-weight:700; margin-bottom:4px; }
-  .section-sub { font-size:12px; color:#8A7EA0; margin-bottom:16px; }
+  .section-sub { font-size:12px; color:#8A7EA0; margin-bottom:16px; width: 95%; }
 
   table { width:100%; border-collapse:collapse; font-size:13px; }
   th { text-align:left; padding:8px 10px; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#8A7EA0; border-bottom:2px solid var(--navy-deep); font-weight:700; }
@@ -78,6 +86,54 @@
   .footer { background:var(--navy-deep); color:#FFFFFF; text-align:center; padding:16px; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; }
 
   .loading { padding:80px var(--gutter); text-align:center; color:#9A8FB0; font-size:14px; }
+
+  /* Floating Style Context */
+  .section.floating-collection {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 450px;
+    max-width: calc(100vw - 48px);
+    background: #FFFFFF;
+    box-shadow: 0 12px 36px rgba(16,25,59,0.2);
+    border: 2px solid var(--purple);
+    border-radius: 16px;
+    z-index: 1000;
+    padding: 24px;
+    box-sizing: border-box;
+  }
+  .section.floating-collection .section-sub { width: 100%; }
+
+  /* Minimal Top-Right Action Button */
+  .section-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .minimal-freeze-btn {
+    background: transparent;
+    color: #7A6E93;
+    border: 1px solid #D9D2E8;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .minimal-freeze-btn:hover {
+    background: #FAF8FD;
+    border-color: var(--purple);
+    color: var(--purple);
+  }
+  .minimal-freeze-btn.active {
+    background: #FDECEA;
+    border-color: var(--danger);
+    color: var(--danger);
+  }
 
   @media print {
     body { background:#FFFFFF; }
@@ -163,69 +219,86 @@
       </div>
     </div>
 
-    <!-- TOP CUSTOMERS -->
-    <div class="section">
-      <div class="section-label">Top 20 customers by exposure</div>
-      <div class="section-sub">Sorted by total overdue amount due (highest to lowest). Max days &gt; 90 highlighted in red.</div>
-      <table>
-        <thead>
-          <tr><th>#</th><th>Customer</th><th class="amt">Amount Due</th><th class="amt">Invoices</th><th class="amt">Max Days Overdue</th><th>Sales Rep(s)</th></tr>
-        </thead>
-        <tbody id="topCustomersBody"></tbody>
-      </table>
-    </div>
-
-    <!-- REPS -->
-    <div class="section">
-      <div class="section-label">Sales rep breakdown</div>
-      <div class="section-sub">Ranked by book of overdue AR (past due invoices only). 90+ % over 30% highlighted in red.</div>
-      <table>
-        <thead>
-          <tr><th>Sales Rep</th><th class="amt">Invoices</th><th class="amt">Total AR</th><th class="amt">90+ Days</th><th class="amt">% 90+</th></tr>
-        </thead>
-        <tbody id="repBreakdownBody"></tbody>
-      </table>
-    </div>
-
-    <!-- FULL TABLE -->
-    <div class="section">
-      <div class="section-label">All overdue invoices</div>
-      <div class="section-sub" id="rowCount">-- invoices</div>
-      <div class="table-controls">
-        <input type="text" id="searchInput" placeholder="Search customer, invoice #, notes...">
-        <select id="repFilter"><option value="">All reps</option></select>
-        <select id="bucketFilter"><option value="">All buckets</option></select>
-        <select id="legalFilter">
-          <option value="">All accounts</option>
-          <option value="legal">Legal only</option>
-          <option value="nonlegal">Exclude legal</option>
-        </select>
+    <!-- TOP CUSTOMERS (Accordion Component) -->
+    <div class="section" id="secTopCustomers">
+      <div class="accordion-header" onclick="toggleAccordion('secTopCustomers')">
+        <div class="section-label">Top 20 customers by exposure</div>
+        <div class="section-sub">Sorted by total overdue amount due (highest to lowest). Max days &gt; 90 highlighted in red.</div>
       </div>
-      <div class="table-scroll">
-        <table class="full-table" id="fullTable">
+      <div class="accordion-content">
+        <table>
           <thead>
-            <tr>
-              <th data-sort="customer">Customer</th>
-              <th data-sort="invoice_num">Invoice #</th>
-              <th data-sort="invoice_date">Invoice Date</th>
-              <th data-sort="date_due">Due Date</th>
-              <th class="amt" data-sort="amount">Amount</th>
-              <th data-sort="rep">Rep</th>
-              <th class="amt" data-sort="days_overdue">Days Overdue</th>
-              <th data-sort="bucket">Bucket</th>
-              <th data-sort="ref_num">Ref #</th>
-              <th data-sort="notes">Notes</th>
-            </tr>
+            <tr><th>#</th><th>Customer</th><th class="amt">Amount Due</th><th class="amt">Invoices</th><th class="amt">Max Days Overdue</th><th>Sales Rep(s)</th></tr>
           </thead>
-          <tbody id="tableBody"></tbody>
+          <tbody id="topCustomersBody"></tbody>
         </table>
       </div>
     </div>
 
+    <!-- REPS (Accordion Component) -->
+    <div class="section" id="secRepsBreakdown">
+      <div class="accordion-header" onclick="toggleAccordion('secRepsBreakdown')">
+        <div class="section-label">Sales rep breakdown</div>
+        <div class="section-sub">Ranked by book of overdue AR (past due invoices only). 90+ % over 30% highlighted in red.</div>
+      </div>
+      <div class="accordion-content">
+        <table>
+          <thead>
+            <tr><th>Sales Rep</th><th class="amt">Invoices</th><th class="amt">Total AR</th><th class="amt">90+ Days</th><th class="amt">% 90+</th></tr>
+          </thead>
+          <tbody id="repBreakdownBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- FULL TABLE (Accordion Component) -->
+    <div class="section" id="secAllInvoices">
+      <div class="accordion-header" onclick="toggleAccordion('secAllInvoices')">
+        <div class="section-label">All overdue invoices</div>
+        <div class="section-sub" id="rowCount">-- invoices</div>
+      </div>
+      <div class="accordion-content">
+        <div class="table-controls">
+          <input type="text" id="searchInput" placeholder="Search customer, invoice #, notes...">
+          <select id="repFilter"><option value="">All reps</option></select>
+          <select id="bucketFilter"><option value="">All buckets</option></select>
+          <select id="legalFilter">
+            <option value="">All accounts</option>
+            <option value="legal">Legal only</option>
+            <option value="nonlegal">Exclude legal</option>
+          </select>
+        </div>
+        <div class="table-scroll">
+          <table class="full-table" id="fullTable">
+            <thead>
+              <tr>
+                <th data-sort="customer">Customer</th>
+                <th data-sort="invoice_num">Invoice #</th>
+                <th data-sort="invoice_date">Invoice Date</th>
+                <th data-sort="date_due">Due Date</th>
+                <th class="amt" data-sort="amount">Amount</th>
+                <th data-sort="rep">Rep</th>
+                <th class="amt" data-sort="days_overdue">Days Overdue</th>
+                <th data-sort="bucket">Bucket</th>
+                <th data-sort="ref_num">Ref #</th>
+                <th data-sort="notes">Notes</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- COLLECTION REPORTS -->
-    <div class="section">
-      <div class="section-label">Collection reports by rep</div>
-      <div class="section-sub">Generates an Excel file for the selected rep: a "60+ Days" tab (all their past-due invoices except legal accounts and not-yet-due invoices, with 60+ day rows highlighted) and a "Legal" tab (their legal-marked accounts).</div>
+    <div class="section" id="secCollectionReports">
+      <div class="section-header-row">
+        <div>
+          <div class="section-label">Collection reports by rep</div>
+          <div class="section-sub">Generates an Excel file for the selected rep: a "60+ Days" tab (all their past-due invoices except legal accounts and not-yet-due invoices, with 60+ day rows highlighted) and a "Legal" tab (their legal-marked accounts).</div>
+        </div>
+        <button class="minimal-freeze-btn" id="freezeBtn" onclick="toggleFreezeCollection()">Freeze Window</button>
+      </div>
       <div class="table-controls">
         <select id="collectionRepSelect" style="min-width:240px;"><option value="">Select a rep...</option></select>
         <button class="refresh-btn" onclick="downloadRepReport()">Download report for this rep</button>
@@ -266,7 +339,6 @@ let chartInstance = null;
 function fmtMoney(v) { return '$' + Math.round(v).toLocaleString('en-US'); }
 
 function parseDate(str) {
-  // expects MM/DD/YYYY
   if (!str) return null;
   const parts = String(str).split('/');
   if (parts.length !== 3) return null;
@@ -295,6 +367,25 @@ function showError(msg) {
 }
 function hideError() {
   document.getElementById('errorBanner').style.display = 'none';
+}
+
+function toggleAccordion(id) {
+  const el = document.getElementById(id);
+  if(el) { el.classList.toggle('collapsed'); }
+}
+
+function toggleFreezeCollection() {
+  const el = document.getElementById('secCollectionReports');
+  const btn = document.getElementById('freezeBtn');
+  if (el.classList.contains('floating-collection')) {
+    el.classList.remove('floating-collection');
+    btn.classList.remove('active');
+    btn.textContent = 'Freeze Window';
+  } else {
+    el.classList.add('floating-collection');
+    btn.classList.add('active');
+    btn.textContent = 'Unfreeze Window';
+  }
 }
 
 async function loadData() {
@@ -559,26 +650,78 @@ function reportDatePrefix() {
 
 async function buildRepWorkbook(rep) {
   const repRows = ALL_DATA.filter(r => r.rep === rep);
+  // Sorted alphabetically by Customer Name
   const nonLegal = repRows.filter(r => !r.legal && r.days_overdue != null && r.days_overdue > 0)
-    .sort((a,b) => (b.days_overdue||0) - (a.days_overdue||0));
+    .sort((a,b) => (a.customer || '').localeCompare(b.customer || ''));
   const legalRows = repRows.filter(r => r.legal)
-    .sort((a,b) => (b.days_overdue||0) - (a.days_overdue||0));
+    .sort((a,b) => (a.customer || '').localeCompare(b.customer || ''));
 
   const wb = new ExcelJS.Workbook();
-  const headers = ['Customer','Invoice #','Invoice Date','Due Date','Amount','Ref #','Notes','Days Overdue (Age)'];
-  const colWidths = [32, 14, 13, 13, 14, 14, 28, 16];
 
-  function fillSheet(ws, titleText, subText, rows, highlightOver59) {
-    ws.mergeCells(1,1,1,headers.length);
-    ws.getCell(1,1).value = titleText;
-    ws.getCell(1,1).font = { name:'Arial', bold:true, size:13, color:{argb:'FF10193B'} };
+  const monthlyHeaders = ['Customer','Invoice Date','Invoice Number','Date Due','Amount Due','Sales Rep','No. Days Overdue','Reference Number','Note'];
+  const monthlyColWidths = [32, 13, 14, 13, 14, 20, 16, 16, 28];
 
-    ws.mergeCells(2,1,2,headers.length);
-    ws.getCell(2,1).value = subText;
-    ws.getCell(2,1).font = { name:'Arial', italic:true, size:9, color:{argb:'FF7A6E93'} };
+  const ws1 = wb.addWorksheet('QMMonthlyCollectionsReport');
 
-    const headerRowIdx = 4;
-    headers.forEach((h, i) => {
+  const d = new Date();
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const asOfDate = monthNames[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+
+  ws1.mergeCells(2,1,2,monthlyHeaders.length);
+  ws1.getCell(2,1).value = 'Q1 Media Inc.';
+  ws1.getCell(2,1).font = { name:'Arial', bold:true, size:16, color:{argb:'FF10193B'} };
+  ws1.getCell(2,1).alignment = { horizontal:'center' };
+
+  ws1.mergeCells(3,1,3,monthlyHeaders.length);
+  ws1.getCell(3,1).value = 'Q1M - Monthly Collections Report - ' + rep;
+  ws1.getCell(3,1).font = { name:'Arial', bold:true, size:14, color:{argb:'FF10193B'} };
+  ws1.getCell(3,1).alignment = { horizontal:'center' };
+
+  ws1.mergeCells(4,1,4,monthlyHeaders.length);
+  ws1.getCell(4,1).value = 'As of ' + asOfDate;
+  ws1.getCell(4,1).font = { name:'Arial', bold:true, size:12, color:{argb:'FF10193B'} };
+  ws1.getCell(4,1).alignment = { horizontal:'center' };
+
+  const monthlyHeaderRowIdx = 7;
+  monthlyHeaders.forEach((h, i) => {
+    const c = ws1.getCell(monthlyHeaderRowIdx, i+1);
+    c.value = h;
+    c.font = { name:'Arial', bold:true, size:11 };
+    c.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFD9D9D9'} };
+    c.border = { bottom: { style:'thin' } };
+  });
+
+  nonLegal.forEach((r, idx) => {
+    const rowIdx = monthlyHeaderRowIdx + 1 + idx;
+    const values = [r.customer, r.invoice_date, r.invoice_num, r.date_due, r.amount, r.rep, r.days_overdue, r.ref_num, r.notes];
+    values.forEach((v, i) => {
+      const c = ws1.getCell(rowIdx, i+1);
+      c.value = v;
+      c.font = { name:'Arial', size:10 };
+      if (i === 4) c.numFmt = '$#,##0.00';
+      if (i === 6) c.alignment = { horizontal:'center' };
+    });
+    const isOver59 = r.days_overdue != null && r.days_overdue > 59;
+    if (isOver59) {
+      for (let i=1;i<=monthlyHeaders.length;i++){
+        ws1.getCell(rowIdx, i).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFFFF00'} };
+      }
+    }
+  });
+
+  ws1.columns = monthlyColWidths.map(w => ({ width: w }));
+  ws1.views = [{ state:'frozen', ySplit: monthlyHeaderRowIdx }];
+  ws1.autoFilter = {
+    from: { row: monthlyHeaderRowIdx, column: 1 },
+    to: { row: monthlyHeaderRowIdx, column: monthlyHeaders.length }
+  };
+
+  const legalHeaders = ['Customer','Invoice Date','Invoice Number','Date Due','Amount Due','No. Days Overdue','Reference Number','Note'];
+  const legalColWidths = [32, 13, 14, 13, 14, 16, 16, 28];
+
+  function fillLegalSheet(ws, rows) {
+    const headerRowIdx = 1;
+    legalHeaders.forEach((h, i) => {
       const c = ws.getCell(headerRowIdx, i+1);
       c.value = h;
       c.font = { name:'Arial', bold:true, size:11, color:{argb:'FFFFFFFF'} };
@@ -588,34 +731,24 @@ async function buildRepWorkbook(rep) {
 
     rows.forEach((r, idx) => {
       const rowIdx = headerRowIdx + 1 + idx;
-      const values = [r.customer, r.invoice_num, r.invoice_date, r.date_due, r.amount, r.ref_num, r.notes, r.days_overdue];
+      const values = [r.customer, r.invoice_date, r.invoice_num, r.date_due, r.amount, r.days_overdue, r.ref_num, r.notes];
       values.forEach((v, i) => {
         const c = ws.getCell(rowIdx, i+1);
         c.value = v;
         c.font = { name:'Arial', size:10 };
         if (i === 4) c.numFmt = '$#,##0.00';
-        if (i === 7) c.alignment = { horizontal:'center' };
+        if (i === 5) c.alignment = { horizontal:'center' };
       });
-      const isOver59 = highlightOver59 && r.days_overdue != null && r.days_overdue > 59;
-      if (isOver59) {
-        for (let i=1;i<=headers.length;i++){
-          ws.getCell(rowIdx, i).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFBD4C4'} };
-        }
-      }
     });
 
-    ws.columns = colWidths.map(w => ({ width: w }));
+    ws.columns = legalColWidths.map(w => ({ width: w }));
     ws.views = [{ state:'frozen', ySplit: headerRowIdx }];
   }
 
-  const over59Count = nonLegal.filter(r => r.days_overdue != null && r.days_overdue > 59).length;
-  const ws1 = wb.addWorksheet('60+ Days');
-  fillSheet(ws1, rep + ' — Accounts Receivable',
-    nonLegal.length + ' past-due invoices · ' + over59Count + ' highlighted as 60+ days overdue · legal and not-yet-due invoices excluded',
-    nonLegal, true);
-
-  const ws2 = wb.addWorksheet('Legal');
-  fillSheet(ws2, rep + ' — Legal Accounts', legalRows.length + ' invoices marked as Legal for this rep', legalRows, false);
+  if (legalRows.length > 0) {
+    const ws2 = wb.addWorksheet('Legal');
+    fillLegalSheet(ws2, legalRows);
+  }
 
   return wb;
 }
@@ -657,14 +790,14 @@ async function downloadAllRepReports() {
 }
 
 async function buildCompanyWorkbook() {
+  // Ordered primarily by Sales Rep and secondarily by Customer Name
   const nonLegal = ALL_DATA.filter(r => !r.legal && r.days_overdue != null && r.days_overdue > 0)
-    .sort((a,b) => (a.rep||'').localeCompare(b.rep||'') || ((b.days_overdue||0) - (a.days_overdue||0)));
+    .sort((a,b) => (a.rep || '').localeCompare(b.rep || '') || (a.customer || '').localeCompare(b.customer || ''));
   const legalRows = ALL_DATA.filter(r => r.legal)
-    .sort((a,b) => (a.rep||'').localeCompare(b.rep||'') || ((b.days_overdue||0) - (a.days_overdue||0)));
+    .sort((a,b) => (a.rep || '').localeCompare(b.rep || '') || (a.customer || '').localeCompare(b.customer || ''));
 
   const wb = new ExcelJS.Workbook();
 
-  // ---- "QMMonthlyCollectionsReport" tab: title-block header + new column layout ----
   const monthlyHeaders = ['Customer','Invoice Date','Invoice Number','Date Due','Amount Due','Sales Rep','No. Days Overdue','Reference Number','Note'];
   const monthlyColWidths = [32, 13, 14, 13, 14, 20, 16, 16, 28];
 
@@ -698,7 +831,6 @@ async function buildCompanyWorkbook() {
     c.border = { bottom: { style:'thin' } };
   });
 
-  const over59Count = nonLegal.filter(r => r.days_overdue != null && r.days_overdue > 59).length;
   nonLegal.forEach((r, idx) => {
     const rowIdx = monthlyHeaderRowIdx + 1 + idx;
     const values = [r.customer, r.invoice_date, r.invoice_num, r.date_due, r.amount, r.rep, r.days_overdue, r.ref_num, r.notes];
@@ -724,20 +856,11 @@ async function buildCompanyWorkbook() {
     to: { row: monthlyHeaderRowIdx, column: monthlyHeaders.length }
   };
 
-  // ---- "Legal" tab: keeps the original report layout ----
   const legalHeaders = ['Customer','Invoice #','Invoice Date','Due Date','Rep','Amount','Days Overdue (Age)','Ref #','Notes'];
   const legalColWidths = [32, 14, 13, 13, 20, 14, 16, 14, 28];
 
-  function fillLegalSheet(ws, titleText, subText, rows) {
-    ws.mergeCells(1,1,1,legalHeaders.length);
-    ws.getCell(1,1).value = titleText;
-    ws.getCell(1,1).font = { name:'Arial', bold:true, size:13, color:{argb:'FF10193B'} };
-
-    ws.mergeCells(2,1,2,legalHeaders.length);
-    ws.getCell(2,1).value = subText;
-    ws.getCell(2,1).font = { name:'Arial', italic:true, size:9, color:{argb:'FF7A6E93'} };
-
-    const headerRowIdx = 4;
+  function fillLegalSheet(ws, rows) {
+    const headerRowIdx = 1;
     legalHeaders.forEach((h, i) => {
       const c = ws.getCell(headerRowIdx, i+1);
       c.value = h;
@@ -763,7 +886,7 @@ async function buildCompanyWorkbook() {
   }
 
   const ws2 = wb.addWorksheet('Legal');
-  fillLegalSheet(ws2, 'All Reps — Legal Accounts', legalRows.length + ' invoices marked as Legal, company-wide', legalRows);
+  fillLegalSheet(ws2, legalRows);
 
   return wb;
 }

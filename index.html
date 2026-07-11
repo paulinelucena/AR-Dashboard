@@ -178,6 +178,49 @@
     .section { page-break-inside: avoid; }
     .setup-banner, .refresh-btn { display:none; }
   }
+
+  /* SEND REPORT MODAL */
+  .send-modal-overlay { display:none; position:fixed; inset:0; background:rgba(8,10,28,0.65); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+  .send-modal-overlay.open { display:flex; }
+  .send-modal { background:var(--bg-card); border:1px solid var(--border-color); border-radius:16px; width:100%; max-width:620px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.4); }
+  .send-modal-header { padding:20px 24px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; }
+  .send-modal-header h3 { margin:0; font-size:16px; font-weight:800; color:var(--text-primary); }
+  .send-modal-header .step-label { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--magenta); font-weight:700; margin-bottom:2px; }
+  .send-modal-close { background:none; border:none; color:var(--text-secondary); font-size:20px; cursor:pointer; line-height:1; padding:4px; }
+  .send-modal-close:hover { color:var(--text-primary); }
+  .send-modal-body { padding:24px; }
+  .send-field { margin-bottom:16px; }
+  .send-field label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; font-weight:700; color:var(--text-secondary); margin-bottom:6px; }
+  .send-field .hint { font-size:11px; color:var(--text-muted); margin-top:5px; line-height:1.5; }
+  .send-field input[type="text"], .send-field input[type="email"], .send-field textarea {
+    width:100%; box-sizing:border-box; padding:10px 12px; font-size:13px; border:1px solid var(--border-color);
+    border-radius:8px; font-family:inherit; background:var(--bg-input); color:var(--text-primary);
+  }
+  .send-field textarea { resize:vertical; min-height:110px; line-height:1.5; }
+  .send-field-row { display:flex; gap:12px; }
+  .send-field-row .send-field { flex:1; }
+  .send-modal-footer { padding:16px 24px; border-top:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+  .send-modal-footer .left-actions { display:flex; gap:8px; }
+  .send-btn-secondary {
+    background:transparent; color:var(--text-secondary); border:1px solid var(--border-color); padding:10px 18px;
+    border-radius:999px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit;
+  }
+  .send-btn-secondary:hover { border-color:var(--purple); color:var(--purple); }
+  .send-btn-primary {
+    background:linear-gradient(90deg, var(--magenta) 0%, var(--magenta-dark) 100%); color:#fff; border:none;
+    padding:10px 20px; border-radius:999px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;
+  }
+  .send-btn-primary:hover { filter:brightness(1.08); }
+  .send-btn-primary:disabled { opacity:0.5; cursor:default; }
+  .preview-box { background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:16px 18px; font-size:13px; }
+  .preview-row { display:flex; gap:10px; padding:7px 0; border-bottom:1px solid var(--table-border); }
+  .preview-row:last-child { border-bottom:none; }
+  .preview-row .pr-label { width:88px; flex-shrink:0; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; color:var(--text-muted); padding-top:2px; }
+  .preview-row .pr-value { color:var(--text-primary); word-break:break-word; }
+  .preview-row .pr-value.empty { color:var(--text-muted); font-style:italic; }
+  .preview-file-chip { display:inline-flex; align-items:center; gap:6px; background:var(--setup-bg); border:1px solid var(--magenta); color:var(--text-primary); padding:5px 12px; border-radius:999px; font-size:12px; font-weight:600; }
+  .preview-body-text { white-space:pre-wrap; line-height:1.6; color:var(--text-primary); margin-top:4px; }
+  .send-warning { font-size:12px; color:var(--warn); background:rgba(232,89,12,0.12); border:1px solid var(--warn); border-radius:8px; padding:10px 14px; margin-top:14px; line-height:1.5; }
 </style>
 </head>
 <body>
@@ -350,8 +393,103 @@
         <button class="refresh-btn" onclick="downloadRepReport()">Download report for this rep</button>
         <button class="refresh-btn" style="background:linear-gradient(90deg, var(--navy-mid), var(--navy-deep));" onclick="downloadAllRepReports()">Download all reps (zip)</button>
         <button class="refresh-btn" style="background:linear-gradient(90deg, var(--purple), var(--blue-accent));" onclick="downloadCompanyReport()">Download company-wide report (all reps combined)</button>
+        <button class="refresh-btn" style="background:linear-gradient(90deg, var(--blue-accent), var(--magenta));" onclick="openSendModal()">✉ Send report to rep</button>
       </div>
       <div class="section-sub" id="collectionStatus"></div>
+    </div>
+
+    <!-- SEND REPORT MODAL -->
+    <div class="send-modal-overlay" id="sendModalOverlay">
+      <div class="send-modal">
+        <div class="send-modal-header">
+          <div>
+            <div class="step-label" id="sendModalStepLabel">Step 1 of 2</div>
+            <h3 id="sendModalTitle">Compose report email</h3>
+          </div>
+          <button class="send-modal-close" onclick="closeSendModal()">&times;</button>
+        </div>
+
+        <!-- STEP 1: COMPOSE -->
+        <div class="send-modal-body" id="sendStepCompose">
+          <div class="send-field">
+            <label>Sending report for</label>
+            <input type="text" id="sendRepName" readonly style="opacity:0.85;">
+          </div>
+          <div class="send-field-row">
+            <div class="send-field">
+              <label>To</label>
+              <input type="email" id="sendTo" placeholder="rep@q1media.com">
+            </div>
+          </div>
+          <div class="send-field-row">
+            <div class="send-field">
+              <label>CC <span style="text-transform:none; font-weight:400;">(optional)</span></label>
+              <input type="text" id="sendCc" placeholder="name@company.com, name2@company.com">
+            </div>
+            <div class="send-field">
+              <label>BCC <span style="text-transform:none; font-weight:400;">(optional)</span></label>
+              <input type="text" id="sendBcc" placeholder="name@company.com">
+            </div>
+          </div>
+          <div class="send-field">
+            <label>Subject</label>
+            <input type="text" id="sendSubject">
+          </div>
+          <div class="send-field">
+            <label>Message</label>
+            <textarea id="sendBody"></textarea>
+            <div class="hint">Placeholders you can use: <code>{{rep}}</code>, <code>{{date}}</code>, <code>{{invoice_count}}</code>, <code>{{total_due}}</code>. Click "Save as default message" to reuse this text next time.</div>
+          </div>
+          <div class="send-field" style="margin-bottom:0;">
+            <button class="send-btn-secondary" onclick="saveEmailTemplateDefault()" type="button">💾 Save as default message</button>
+            <span id="templateSavedNote" style="font-size:11px; color:var(--text-muted); margin-left:8px;"></span>
+          </div>
+        </div>
+
+        <!-- STEP 2: PREVIEW -->
+        <div class="send-modal-body" id="sendStepPreview" style="display:none;">
+          <div class="preview-box">
+            <div class="preview-row">
+              <div class="pr-label">Attachment</div>
+              <div class="pr-value"><span class="preview-file-chip" id="previewFileChip">📎 file.xlsx</span></div>
+            </div>
+            <div class="preview-row">
+              <div class="pr-label">To</div>
+              <div class="pr-value" id="previewTo"></div>
+            </div>
+            <div class="preview-row">
+              <div class="pr-label">CC</div>
+              <div class="pr-value" id="previewCc"></div>
+            </div>
+            <div class="preview-row">
+              <div class="pr-label">BCC</div>
+              <div class="pr-value" id="previewBcc"></div>
+            </div>
+            <div class="preview-row">
+              <div class="pr-label">Subject</div>
+              <div class="pr-value" id="previewSubject"></div>
+            </div>
+            <div class="preview-row">
+              <div class="pr-label">Message</div>
+              <div class="pr-value preview-body-text" id="previewBody"></div>
+            </div>
+          </div>
+          <div class="send-warning">
+            ⚠ Browsers won't let a webpage auto-attach a file to an email. Clicking "Send" will (1) download the report file, and (2) open your default email app with the To/CC/BCC/subject/message already filled in — you just need to drag the downloaded file into that email before hitting send.
+          </div>
+        </div>
+
+        <div class="send-modal-footer">
+          <div class="left-actions">
+            <button class="send-btn-secondary" id="sendBackBtn" onclick="backToCompose()" style="display:none;">← Back</button>
+          </div>
+          <div class="left-actions">
+            <button class="send-btn-secondary" onclick="closeSendModal()">Cancel</button>
+            <button class="send-btn-primary" id="sendPreviewBtn" onclick="goToPreview()">View before sending →</button>
+            <button class="send-btn-primary" id="sendFinalBtn" style="display:none;" onclick="sendReportEmail()">Download &amp; open email ✉</button>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -559,6 +697,7 @@ async function loadData() {
         flag_note: (r.flag_note || '').trim(),
         legal: ((r.legal || '').trim().toLowerCase() === 'legal'),
         days_overdue: daysOverdue,
+        rep_email: (r.sales_rep_email || r['sales rep email'] || r['Sales Rep Email'] || r['sales_rep_email'] || r.email || r['Email'] || '').trim(),
       };
     }).filter(r => r.customer && r.date_due && r.days_overdue !== null);
 
@@ -1106,6 +1245,162 @@ async function downloadCompanyReport() {
   triggerBlobDownload(new Blob([buf], {type:'application/octet-stream'}), reportDatePrefix() + '.xlsx');
   statusEl.textContent = 'Downloaded the company-wide collection report.';
 }
+
+/* ===================== SEND REPORT TO REP (email compose/preview) ===================== */
+
+const DEFAULT_EMAIL_SUBJECT = 'Q1 Media - Collections Report for {{rep}} - {{date}}';
+const DEFAULT_EMAIL_BODY =
+'Hi {{rep}},\n\n' +
+'Attached is your collections report as of {{date}}, covering {{invoice_count}} past-due invoice(s) totaling {{total_due}}.\n\n' +
+'Please review and follow up with the accounts listed, especially anything flagged 60+ days overdue. Let me know if you have any questions.\n\n' +
+'Thank you,\nPauline Lucena\nAccounting & Finance';
+
+function getSavedEmailTemplate() {
+  return {
+    subject: localStorage.getItem('ar_dashboard_email_subject') || DEFAULT_EMAIL_SUBJECT,
+    body: localStorage.getItem('ar_dashboard_email_body') || DEFAULT_EMAIL_BODY
+  };
+}
+
+function saveEmailTemplateDefault() {
+  localStorage.setItem('ar_dashboard_email_subject', document.getElementById('sendSubject').value);
+  localStorage.setItem('ar_dashboard_email_body', document.getElementById('sendBody').value);
+  const note = document.getElementById('templateSavedNote');
+  note.textContent = 'Saved ✓ — this will be your default message next time.';
+  setTimeout(() => { note.textContent = ''; }, 3500);
+}
+
+function getRepEmail(rep) {
+  const row = ALL_DATA.find(r => r.rep === rep && r.rep_email);
+  return row ? row.rep_email : '';
+}
+
+function repReportStats(rep) {
+  const repRows = ALL_DATA.filter(r => r.rep === rep && !r.legal && r.days_overdue != null && r.days_overdue > 0);
+  const total = repRows.reduce((s, r) => s + r.amount, 0);
+  return { count: repRows.length, total: fmtMoney(total) };
+}
+
+function fillPlaceholders(text, rep) {
+  const stats = repReportStats(rep);
+  const d = new Date();
+  const dateStr = d.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  return (text || '')
+    .replace(/\{\{rep\}\}/g, rep)
+    .replace(/\{\{date\}\}/g, dateStr)
+    .replace(/\{\{invoice_count\}\}/g, stats.count)
+    .replace(/\{\{total_due\}\}/g, stats.total);
+}
+
+function openSendModal() {
+  const rep = document.getElementById('collectionRepSelect').value;
+  const statusEl = document.getElementById('collectionStatus');
+  if (!rep) { statusEl.textContent = 'Please select a rep first, then click "Send report to rep".'; return; }
+  statusEl.textContent = '';
+
+  document.getElementById('sendRepName').value = rep;
+  document.getElementById('sendTo').value = getRepEmail(rep);
+  document.getElementById('sendCc').value = '';
+  document.getElementById('sendBcc').value = '';
+
+  const tmpl = getSavedEmailTemplate();
+  document.getElementById('sendSubject').value = tmpl.subject;
+  document.getElementById('sendBody').value = tmpl.body;
+  document.getElementById('templateSavedNote').textContent = '';
+
+  showComposeStep();
+  document.getElementById('sendModalOverlay').classList.add('open');
+}
+
+function closeSendModal() {
+  document.getElementById('sendModalOverlay').classList.remove('open');
+}
+
+function showComposeStep() {
+  document.getElementById('sendStepCompose').style.display = 'block';
+  document.getElementById('sendStepPreview').style.display = 'none';
+  document.getElementById('sendBackBtn').style.display = 'none';
+  document.getElementById('sendPreviewBtn').style.display = 'inline-block';
+  document.getElementById('sendFinalBtn').style.display = 'none';
+  document.getElementById('sendModalStepLabel').textContent = 'Step 1 of 2';
+  document.getElementById('sendModalTitle').textContent = 'Compose report email';
+}
+
+function backToCompose() {
+  showComposeStep();
+}
+
+function goToPreview() {
+  const rep = document.getElementById('sendRepName').value;
+  const to = document.getElementById('sendTo').value.trim();
+  if (!to) {
+    alert('Please enter a "To" email address before previewing (the rep has no email on file in the sheet, so you\'ll need to type it in).');
+    return;
+  }
+  const cc = document.getElementById('sendCc').value.trim();
+  const bcc = document.getElementById('sendBcc').value.trim();
+  const subjectRaw = document.getElementById('sendSubject').value;
+  const bodyRaw = document.getElementById('sendBody').value;
+
+  const filename = reportDatePrefix() + ' - ' + rep + '.xlsx';
+
+  document.getElementById('previewFileChip').textContent = '📎 ' + filename;
+  document.getElementById('previewTo').innerHTML = to ? (rep + ' &lt;' + to + '&gt;') : '<span class="pr-value empty">(none entered)</span>';
+  const ccEl = document.getElementById('previewCc');
+  ccEl.innerHTML = cc ? cc : '<span class="empty">(none)</span>';
+  const bccEl = document.getElementById('previewBcc');
+  bccEl.innerHTML = bcc ? bcc : '<span class="empty">(none)</span>';
+  document.getElementById('previewSubject').textContent = fillPlaceholders(subjectRaw, rep);
+  document.getElementById('previewBody').textContent = fillPlaceholders(bodyRaw, rep);
+
+  document.getElementById('sendStepCompose').style.display = 'none';
+  document.getElementById('sendStepPreview').style.display = 'block';
+  document.getElementById('sendBackBtn').style.display = 'inline-block';
+  document.getElementById('sendPreviewBtn').style.display = 'none';
+  document.getElementById('sendFinalBtn').style.display = 'inline-block';
+  document.getElementById('sendModalStepLabel').textContent = 'Step 2 of 2';
+  document.getElementById('sendModalTitle').textContent = 'Review before sending';
+}
+
+async function sendReportEmail() {
+  const rep = document.getElementById('sendRepName').value;
+  const to = document.getElementById('sendTo').value.trim();
+  const cc = document.getElementById('sendCc').value.trim();
+  const bcc = document.getElementById('sendBcc').value.trim();
+  const subject = fillPlaceholders(document.getElementById('sendSubject').value, rep);
+  const body = fillPlaceholders(document.getElementById('sendBody').value, rep);
+  const statusEl = document.getElementById('collectionStatus');
+
+  const finalBtn = document.getElementById('sendFinalBtn');
+  finalBtn.disabled = true;
+  finalBtn.textContent = 'Building report...';
+
+  try {
+    const wb = await buildRepWorkbook(rep);
+    const buf = await wb.xlsx.writeBuffer();
+    const filename = reportDatePrefix() + ' - ' + rep + '.xlsx';
+    triggerBlobDownload(new Blob([buf], {type:'application/octet-stream'}), filename);
+
+    let mailto = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    if (cc) mailto += '&cc=' + encodeURIComponent(cc);
+    if (bcc) mailto += '&bcc=' + encodeURIComponent(bcc);
+
+    window.location.href = mailto;
+
+    statusEl.textContent = 'Downloaded "' + filename + '" and opened your email app for ' + rep + ' — attach the downloaded file, then hit send.';
+    closeSendModal();
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = 'Could not prepare the email: ' + err.message;
+  } finally {
+    finalBtn.disabled = false;
+    finalBtn.textContent = 'Download & open email ✉';
+  }
+}
+
+document.getElementById('sendModalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeSendModal();
+});
 
 if (SHEET_CSV_URL) { document.getElementById('sheetUrlInput').value = SHEET_CSV_URL; }
 loadData();

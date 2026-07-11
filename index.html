@@ -397,6 +397,17 @@
         <button class="refresh-btn" style="background:linear-gradient(90deg, var(--navy-deep), var(--purple));" onclick="openSendModal('company')">✉ Send company-wide report to me</button>
       </div>
       <div class="section-sub" id="collectionStatus"></div>
+      <div style="margin-top:10px;">
+        <a href="#" onclick="toggleEmailApiSetup(); return false;" style="font-size:12px; color:var(--text-secondary); text-decoration:underline; cursor:pointer;" id="emailApiSetupToggle">⚙ Set up automatic email sending (optional — skips the manual attach step)</a>
+        <div id="emailApiSetupBox" style="display:none; margin-top:10px; padding:14px 16px; background:var(--setup-bg); border-left:4px solid var(--magenta); border-radius:8px; font-size:12px; line-height:1.6; max-width:620px;">
+          Paste the URL of your email-sending backend (a small serverless function that calls Resend/SendGrid on your behalf — GitHub Pages can't hold the API key itself). Once set, "Send report to rep" / "Send company-wide report" will send the email <strong>with the attachment automatically included</strong>, no drag-and-drop needed. Leave blank to keep the current manual download + mail-app flow.
+          <br>
+          <input type="text" id="emailApiUrlInput" placeholder="https://your-worker.your-subdomain.workers.dev" style="width:100%; margin-top:8px; padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); font-family:inherit; font-size:12px; box-sizing:border-box;">
+          <br>
+          <button class="send-btn-secondary" style="margin-top:8px;" onclick="saveEmailApiUrl()" type="button">Save</button>
+          <span id="emailApiSavedNote" style="font-size:11px; color:var(--text-muted); margin-left:8px;"></span>
+        </div>
+      </div>
     </div>
 
     <!-- SEND REPORT MODAL -->
@@ -453,7 +464,7 @@
           <div class="send-field">
             <label>Message</label>
             <textarea id="sendBody"></textarea>
-            <div class="hint">Placeholders you can use: <code>{{rep}}</code>, <code>{{date}}</code>, <code>{{invoice_count}}</code>, <code>{{total_due}}</code>, <code>{{sender_name}}</code>, <code>{{sender_title}}</code>. Click "Save as default" to reuse this message, CC list, and signature next time.</div>
+            <div class="hint">Placeholders you can use: <code>{{rep}}</code>, <code>{{rep_first}}</code> (first name only), <code>{{date}}</code>, <code>{{invoice_count}}</code>, <code>{{total_due}}</code>, <code>{{sender_name}}</code>, <code>{{sender_title}}</code>. Click "Save as default" to reuse this message, CC list, and signature next time.</div>
           </div>
           <div class="send-field" style="margin-bottom:0;">
             <button class="send-btn-secondary" onclick="saveEmailTemplateDefault()" type="button">💾 Save as default</button>
@@ -489,7 +500,7 @@
               <div class="pr-value preview-body-text" id="previewBody"></div>
             </div>
           </div>
-          <div class="send-warning">
+          <div class="send-warning" id="sendWarningBox">
             ⚠ Browsers won't let a webpage auto-attach a file to an email. Clicking "Send" will (1) download the report file, and (2) open your default email app with the To/CC/BCC/subject/message already filled in — you just need to drag the downloaded file into that email before hitting send.
           </div>
         </div>
@@ -1263,12 +1274,12 @@ async function downloadCompanyReport() {
 
 /* ===================== SEND REPORT TO REP (email compose/preview) ===================== */
 
-const DEFAULT_EMAIL_SUBJECT = 'Q1 Media - Collections Report for {{rep}} - {{date}}';
+const DEFAULT_EMAIL_SUBJECT = 'Collection Report as of {{date}} - {{rep}}';
 const DEFAULT_EMAIL_CC = 'jaime.skalla@q1media.com, accounting@q1media.com';
 const DEFAULT_SENDER_NAME = 'Pauline Lucena';
 const DEFAULT_SENDER_TITLE = 'Accounting Analyst';
 const DEFAULT_EMAIL_BODY =
-'{{rep}},\n\n' +
+'{{rep_first}},\n\n' +
 'All accounts that are beyond 60 days will need to be contacted. Please send an email to accounting@q1media.com with payment status. Thank you!!\n\n' +
 'Before you reach out to your client list below, here are a few reminders that will help you get the most out of the collections report:\n\n' +
 '• The collections report is an "open balance" report. If you don\'t see an invoice listed, that means payment has been received.\n\n' +
@@ -1327,8 +1338,10 @@ function fillPlaceholders(text, rep, mode) {
   const dateStr = d.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
   const senderName = (document.getElementById('sendSenderName').value || DEFAULT_SENDER_NAME).trim();
   const senderTitle = (document.getElementById('sendSenderTitle').value || DEFAULT_SENDER_TITLE).trim();
+  const repFirst = mode === 'company' ? 'All Reps' : (rep || '').trim().split(/\s+/)[0];
   return (text || '')
     .replace(/\{\{rep\}\}/g, mode === 'company' ? 'All Reps' : rep)
+    .replace(/\{\{rep_first\}\}/g, repFirst)
     .replace(/\{\{date\}\}/g, dateStr)
     .replace(/\{\{invoice_count\}\}/g, stats.count)
     .replace(/\{\{total_due\}\}/g, stats.total)
@@ -1384,6 +1397,33 @@ function showComposeStep() {
     : 'Compose report email';
 }
 
+function toggleEmailApiSetup() {
+  const box = document.getElementById('emailApiSetupBox');
+  box.style.display = (box.style.display === 'none' || !box.style.display) ? 'block' : 'none';
+}
+
+function saveEmailApiUrl() {
+  const url = document.getElementById('emailApiUrlInput').value.trim();
+  localStorage.setItem('ar_dashboard_email_api_url', url);
+  const note = document.getElementById('emailApiSavedNote');
+  note.textContent = url ? 'Saved ✓ — sending will now be automatic, attachment included.' : 'Cleared — back to manual download + email app.';
+  setTimeout(() => { note.textContent = ''; }, 4000);
+}
+
+function getEmailApiUrl() {
+  return localStorage.getItem('ar_dashboard_email_api_url') || '';
+}
+
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
 function backToCompose() {
   showComposeStep();
 }
@@ -1412,6 +1452,12 @@ function goToPreview() {
   document.getElementById('previewSubject').textContent = fillPlaceholders(subjectRaw, rep, currentSendMode);
   document.getElementById('previewBody').textContent = fillPlaceholders(bodyRaw, rep, currentSendMode);
 
+  const apiConfigured = !!getEmailApiUrl();
+  document.getElementById('sendWarningBox').innerHTML = apiConfigured
+    ? '✅ Automatic sending is set up. Clicking "Send" will email this directly to the recipient(s) above with <strong>' + filename + '</strong> already attached — no extra steps needed.'
+    : '⚠ Browsers won\'t let a webpage auto-attach a file to an email. Clicking "Send" will (1) download the report file, and (2) open your default email app with the To/CC/BCC/subject/message already filled in — you just need to drag the downloaded file into that email before hitting send. <a href="#" onclick="closeSendModal(); toggleEmailApiSetup(); return false;" style="color:inherit;">Set up automatic sending →</a>';
+  document.getElementById('sendFinalBtn').textContent = apiConfigured ? 'Send email ✉' : 'Download & open email ✉';
+
   document.getElementById('sendStepCompose').style.display = 'none';
   document.getElementById('sendStepPreview').style.display = 'block';
   document.getElementById('sendBackBtn').style.display = 'inline-block';
@@ -1430,6 +1476,7 @@ async function sendReportEmail() {
   const subject = fillPlaceholders(document.getElementById('sendSubject').value, rep, currentSendMode);
   const body = fillPlaceholders(document.getElementById('sendBody').value, rep, currentSendMode);
   const statusEl = document.getElementById('collectionStatus');
+  const apiUrl = getEmailApiUrl();
 
   const finalBtn = document.getElementById('sendFinalBtn');
   finalBtn.disabled = true;
@@ -1439,26 +1486,49 @@ async function sendReportEmail() {
     const wb = currentSendMode === 'company' ? await buildCompanyWorkbook() : await buildRepWorkbook(rep);
     const buf = await wb.xlsx.writeBuffer();
     const filename = currentAttachmentFilename(currentSendMode, rep);
-    triggerBlobDownload(new Blob([buf], {type:'application/octet-stream'}), filename);
 
-    let mailto = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-    if (cc) mailto += '&cc=' + encodeURIComponent(cc);
-    if (bcc) mailto += '&bcc=' + encodeURIComponent(bcc);
+    if (apiUrl) {
+      finalBtn.textContent = 'Sending email...';
+      const attachmentBase64 = arrayBufferToBase64(buf);
+      const resp = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to, cc, bcc, subject, message: body, attachmentBase64, attachmentFilename: filename })
+      });
+      let result = {};
+      try { result = await resp.json(); } catch (e) {}
+      if (!resp.ok || result.success === false) {
+        throw new Error(result.error || ('Email API returned status ' + resp.status));
+      }
 
-    window.location.href = mailto;
+      if (currentSendMode === 'company' && to) {
+        localStorage.setItem('ar_dashboard_my_email', to);
+      }
 
-    if (currentSendMode === 'company' && to) {
-      localStorage.setItem('ar_dashboard_my_email', to);
+      statusEl.textContent = 'Email sent to ' + displayName + ' with "' + filename + '" attached ✓';
+      closeSendModal();
+    } else {
+      triggerBlobDownload(new Blob([buf], {type:'application/octet-stream'}), filename);
+
+      let mailto = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+      if (cc) mailto += '&cc=' + encodeURIComponent(cc);
+      if (bcc) mailto += '&bcc=' + encodeURIComponent(bcc);
+
+      window.location.href = mailto;
+
+      if (currentSendMode === 'company' && to) {
+        localStorage.setItem('ar_dashboard_my_email', to);
+      }
+
+      statusEl.textContent = 'Downloaded "' + filename + '" and opened your email app for ' + displayName + ' — attach the downloaded file, then hit send.';
+      closeSendModal();
     }
-
-    statusEl.textContent = 'Downloaded "' + filename + '" and opened your email app for ' + displayName + ' — attach the downloaded file, then hit send.';
-    closeSendModal();
   } catch (err) {
     console.error(err);
-    statusEl.textContent = 'Could not prepare the email: ' + err.message;
+    statusEl.textContent = 'Could not send the email: ' + err.message;
   } finally {
     finalBtn.disabled = false;
-    finalBtn.textContent = 'Download & open email ✉';
+    finalBtn.textContent = apiUrl ? 'Send email ✉' : 'Download & open email ✉';
   }
 }
 
@@ -1467,6 +1537,7 @@ document.getElementById('sendModalOverlay').addEventListener('click', function(e
 });
 
 if (SHEET_CSV_URL) { document.getElementById('sheetUrlInput').value = SHEET_CSV_URL; }
+document.getElementById('emailApiUrlInput').value = getEmailApiUrl();
 loadData();
 </script>
 

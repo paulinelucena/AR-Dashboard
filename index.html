@@ -468,6 +468,7 @@
           </div>
           <div class="send-field" style="margin-bottom:0;">
             <button class="send-btn-secondary" onclick="saveEmailTemplateDefault()" type="button">💾 Save as default</button>
+            <button class="send-btn-secondary" onclick="resetEmailTemplateToDefault()" type="button">↺ Reset to default</button>
             <span id="templateSavedNote" style="font-size:11px; color:var(--text-muted); margin-left:8px;"></span>
           </div>
         </div>
@@ -1274,7 +1275,7 @@ async function downloadCompanyReport() {
 
 /* ===================== SEND REPORT TO REP (email compose/preview) ===================== */
 
-const DEFAULT_EMAIL_SUBJECT = 'Collection Report as of {{date}} - {{rep}}';
+const DEFAULT_EMAIL_SUBJECT = 'Q1 Media - Collections Report as of {{date}} - {{rep}}';
 const DEFAULT_EMAIL_CC = 'jaime.skalla@q1media.com, accounting@q1media.com';
 const DEFAULT_SENDER_NAME = 'Pauline Lucena';
 const DEFAULT_SENDER_TITLE = 'Accounting Analyst';

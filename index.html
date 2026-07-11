@@ -1312,6 +1312,22 @@ function saveEmailTemplateDefault() {
   setTimeout(() => { note.textContent = ''; }, 3500);
 }
 
+function resetEmailTemplateToDefault() {
+  localStorage.removeItem('ar_dashboard_email_subject');
+  localStorage.removeItem('ar_dashboard_email_body');
+  localStorage.removeItem('ar_dashboard_email_cc');
+  localStorage.removeItem('ar_dashboard_sender_name');
+  localStorage.removeItem('ar_dashboard_sender_title');
+  document.getElementById('sendSubject').value = DEFAULT_EMAIL_SUBJECT;
+  document.getElementById('sendBody').value = DEFAULT_EMAIL_BODY;
+  document.getElementById('sendCc').value = DEFAULT_EMAIL_CC;
+  document.getElementById('sendSenderName').value = DEFAULT_SENDER_NAME;
+  document.getElementById('sendSenderTitle').value = DEFAULT_SENDER_TITLE;
+  const note = document.getElementById('templateSavedNote');
+  note.textContent = 'Reset to the latest built-in template ✓ (uses {{rep_first}} and your live signature fields).';
+  setTimeout(() => { note.textContent = ''; }, 4500);
+}
+
 function getRepEmail(rep) {
   const row = ALL_DATA.find(r => r.rep === rep && r.rep_email);
   return row ? row.rep_email : '';

@@ -1528,10 +1528,17 @@ function getMergeMap(ws) {
 function escapeHtmlPreview(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+function isColorDark(hex) {
+  hex = hex.replace('#','');
+  const r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
+  const luminance = (0.299*r + 0.587*g + 0.114*b) / 255;
+  return luminance < 0.5;
+}
 function renderWorksheetToHTML(ws) {
   const { skip, spanMap } = getMergeMap(ws);
   const colCount = ws.columnCount || 1;
   const rowCount = ws.rowCount || ws.actualRowCount || 1;
+  const isDarkTheme = document.documentElement.getAttribute('data-theme') !== 'light';
   let html = '<table class="xlsx-preview-table"><tbody>';
   for (let r = 1; r <= rowCount; r++) {
     const row = ws.getRow(r);
@@ -1554,11 +1561,18 @@ function renderWorksheetToHTML(ws) {
       let style = '';
       const font = cell.font;
       if (font && font.bold) style += 'font-weight:700;';
-      if (font && font.color && font.color.argb) style += 'color:#' + font.color.argb.slice(2) + ';';
       if (font && font.size) style += 'font-size:' + Math.max(11, font.size) + 'px;';
       const fill = cell.fill;
-      if (fill && fill.type === 'pattern' && fill.fgColor && fill.fgColor.argb && fill.fgColor.argb !== '00000000') {
-        style += 'background:#' + fill.fgColor.argb.slice(2) + ';';
+      const hasFill = fill && fill.type === 'pattern' && fill.fgColor && fill.fgColor.argb && fill.fgColor.argb !== '00000000';
+      if (hasFill) style += 'background:#' + fill.fgColor.argb.slice(2) + ';';
+      // Cell text colors are authored for a white Excel background. In the dark-mode preview,
+      // only honor an explicit dark font color when the cell also has its own fill (so it still
+      // has contrast, e.g. white text on a navy header); otherwise let it inherit the theme color.
+      if (font && font.color && font.color.argb) {
+        const hex = '#' + font.color.argb.slice(2);
+        if (hasFill || !isDarkTheme || !isColorDark(hex)) {
+          style += 'color:' + hex + ';';
+        }
       }
       if (cell.alignment && cell.alignment.horizontal) style += 'text-align:' + cell.alignment.horizontal + ';';
       const span = spanMap[key];

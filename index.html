@@ -249,10 +249,8 @@
             <div class="chart-wrap"><canvas id="yearChart" height="170"></canvas></div>
           </div>
         </div>
-        <div style="display:flex; flex-direction:column;">
-          <div class="chart-wrap" style="flex:1; display:flex; flex-direction:column;">
-            <canvas id="agingChart" style="flex:1; width:100%;"></canvas>
-          </div>
+        <div>
+          <div class="chart-wrap"><canvas id="agingChart" height="220"></canvas></div>
         </div>
       </div>
     </div>
@@ -634,18 +632,16 @@ function renderAging() {
 
   if (chartInstance) chartInstance.destroy();
   const colors = currentThemeColors();
-  const maxVal = Math.max(...chartData, 1);
   chartInstance = new Chart(document.getElementById('agingChart'), {
     type: 'bar',
     data: { labels: BUCKET_ORDER, datasets: [{ label: 'Amount Due', data: chartData, backgroundColor: BUCKET_ORDER.map(b => BUCKET_COLORS[b]), borderRadius: 4 }] },
     options: {
-      indexAxis: 'y',
       responsive: true, maintainAspectRatio: false,
-      layout: { padding: { right: 70 } },
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => '$' + ctx.parsed.x.toLocaleString() } } },
+      layout: { padding: { top: 24 } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => '$' + ctx.parsed.y.toLocaleString() } } },
       scales: {
-        x: { max: maxVal * 1.18, ticks: { callback: (v) => '$' + (v/1000).toFixed(0) + 'K', color: colors.text }, grid: { color: colors.grid } },
-        y: { ticks: { color: colors.text, font: { weight: '600' } }, grid: { display: false } }
+        y: { ticks: { callback: (v) => '$' + (v/1000).toFixed(0) + 'K', color: colors.text }, grid: { color: colors.grid } },
+        x: { ticks: { color: colors.text }, grid: { display: false } }
       }
     },
     plugins: [{
@@ -660,9 +656,8 @@ function renderAging() {
             ctx.save();
             ctx.fillStyle = colors.textStrong;
             ctx.font = '600 12px Sora, Arial, sans-serif';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('$' + Math.round(value).toLocaleString(), bar.x + 10, bar.y);
+            ctx.textAlign = 'center';
+            ctx.fillText('$' + Math.round(value).toLocaleString(), bar.x, bar.y - 8);
             ctx.restore();
           });
         });

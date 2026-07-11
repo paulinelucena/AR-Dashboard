@@ -366,7 +366,8 @@
       <div class="accordion-content">
         <div class="table-controls">
           <input type="text" id="searchInput" placeholder="Search customer, invoice #, notes...">
-          <select id="repFilter"><option value="">All reps</option></select>
+          <input type="text" id="repFilter" list="repFilterOptions" placeholder="All reps" autocomplete="off" style="min-width:160px;">
+        <datalist id="repFilterOptions"></datalist>
           <select id="bucketFilter"><option value="">All buckets</option></select>
           <select id="legalFilter">
             <option value="">All accounts</option>
@@ -406,7 +407,8 @@
         <button class="minimal-freeze-btn" id="freezeBtn" onclick="toggleFreezeCollection()">Freeze Window</button>
       </div>
       <div class="table-controls">
-        <select id="collectionRepSelect" style="min-width:240px;"><option value="">Select a rep...</option></select>
+        <input type="text" id="collectionRepSelect" list="collectionRepOptions" placeholder="Select a rep..." autocomplete="off" style="min-width:240px;">
+        <datalist id="collectionRepOptions"></datalist>
         <button class="refresh-btn" onclick="downloadRepReport()">Download report for this rep</button>
         <button class="refresh-btn" style="background:linear-gradient(90deg, var(--navy-mid), var(--navy-deep));" onclick="downloadAllRepReports()">Download all reps (zip)</button>
         <button class="refresh-btn" style="background:linear-gradient(90deg, var(--purple), var(--blue-accent));" onclick="downloadCompanyReport()">Download company-wide report (all reps combined)</button>
@@ -966,22 +968,21 @@ function renderRepBreakdown() {
 }
 
 function populateFilters() {
-  const repFilter = document.getElementById('repFilter');
+  const repFilterList = document.getElementById('repFilterOptions');
   const bucketFilter = document.getElementById('bucketFilter');
-  repFilter.innerHTML = '<option value="">All reps</option>';
   bucketFilter.innerHTML = '<option value="">All buckets</option>';
   const reps = [...new Set(AR_DATA.map(r => r.rep).filter(Boolean))].sort();
-  reps.forEach(r => { const opt = document.createElement('option'); opt.value = r; opt.textContent = r; repFilter.appendChild(opt); });
+  repFilterList.innerHTML = reps.map(r => '<option value="' + r.replace(/"/g,'&quot;') + '">').join('');
   BUCKET_ORDER.forEach(b => { const opt = document.createElement('option'); opt.value = b; opt.textContent = b; bucketFilter.appendChild(opt); });
 }
 
 function renderTable() {
   const q = (document.getElementById('searchInput').value || '').toLowerCase();
-  const rep = document.getElementById('repFilter').value;
+  const rep = document.getElementById('repFilter').value.trim().toLowerCase();
   const bkt = document.getElementById('bucketFilter').value;
   const legalFilterVal = document.getElementById('legalFilter').value;
   let filtered = AR_DATA.filter(r => {
-    if (rep && r.rep !== rep) return false;
+    if (rep && !String(r.rep).toLowerCase().includes(rep)) return false;
     if (bkt && r.bucket !== bkt) return false;
     if (legalFilterVal === 'legal' && !r.legal) return false;
     if (legalFilterVal === 'nonlegal' && r.legal) return false;
@@ -1020,7 +1021,7 @@ function renderTable() {
 }
 
 document.getElementById('searchInput').addEventListener('input', renderTable);
-document.getElementById('repFilter').addEventListener('change', renderTable);
+document.getElementById('repFilter').addEventListener('input', renderTable);
 document.getElementById('bucketFilter').addEventListener('change', renderTable);
 document.getElementById('legalFilter').addEventListener('change', renderTable);
 document.querySelectorAll('#fullTable th[data-sort]').forEach(th => {
@@ -1033,11 +1034,19 @@ document.querySelectorAll('#fullTable th[data-sort]').forEach(th => {
 
 function populateCollectionRepSelect() {
   const sel = document.getElementById('collectionRepSelect');
+  const list = document.getElementById('collectionRepOptions');
   const current = sel.value;
   const reps = [...new Set(ALL_DATA.map(r => r.rep).filter(Boolean))].sort();
-  sel.innerHTML = '<option value="">Select a rep...</option>' +
-    reps.map(r => '<option value="' + r.replace(/"/g,'&quot;') + '">' + r + '</option>').join('');
+  list.innerHTML = reps.map(r => '<option value="' + r.replace(/"/g,'&quot;') + '">').join('');
   if (reps.includes(current)) sel.value = current;
+}
+
+function resolveRepName(typedValue, repList) {
+  if (!typedValue) return '';
+  const exact = repList.find(r => r === typedValue);
+  if (exact) return exact;
+  const ci = repList.find(r => r.toLowerCase() === typedValue.trim().toLowerCase());
+  return ci || null;
 }
 
 function safeFileName(name) {
@@ -1168,9 +1177,11 @@ function triggerBlobDownload(blob, filename) {
 }
 
 async function downloadRepReport() {
-  const rep = document.getElementById('collectionRepSelect').value;
+  const typed = document.getElementById('collectionRepSelect').value;
   const statusEl = document.getElementById('collectionStatus');
-  if (!rep) { statusEl.textContent = 'Please select a rep first.'; return; }
+  const repList = [...new Set(ALL_DATA.map(r => r.rep).filter(Boolean))];
+  const rep = resolveRepName(typed, repList);
+  if (!rep) { statusEl.textContent = typed ? 'No rep matches "' + typed + '" — pick one from the suggestions.' : 'Please select a rep first.'; return; }
   statusEl.textContent = 'Building report for ' + rep + '...';
   const wb = await buildRepWorkbook(rep);
   const buf = await wb.xlsx.writeBuffer();
@@ -1418,8 +1429,10 @@ function openSendModal(mode) {
   const statusEl = document.getElementById('collectionStatus');
   let rep = '';
   if (mode === 'rep') {
-    rep = document.getElementById('collectionRepSelect').value;
-    if (!rep) { statusEl.textContent = 'Please select a rep first, then click "Send report to rep".'; return; }
+    const typed = document.getElementById('collectionRepSelect').value;
+    const repList = [...new Set(ALL_DATA.map(r => r.rep).filter(Boolean))];
+    rep = resolveRepName(typed, repList);
+    if (!rep) { statusEl.textContent = typed ? 'No rep matches "' + typed + '" — pick one from the suggestions.' : 'Please select a rep first, then click "Send report to rep".'; return; }
   }
   currentSendRep = rep;
   statusEl.textContent = '';

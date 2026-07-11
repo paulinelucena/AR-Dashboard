@@ -393,7 +393,8 @@
         <button class="refresh-btn" onclick="downloadRepReport()">Download report for this rep</button>
         <button class="refresh-btn" style="background:linear-gradient(90deg, var(--navy-mid), var(--navy-deep));" onclick="downloadAllRepReports()">Download all reps (zip)</button>
         <button class="refresh-btn" style="background:linear-gradient(90deg, var(--purple), var(--blue-accent));" onclick="downloadCompanyReport()">Download company-wide report (all reps combined)</button>
-        <button class="refresh-btn" style="background:linear-gradient(90deg, var(--blue-accent), var(--magenta));" onclick="openSendModal()">✉ Send report to rep</button>
+        <button class="refresh-btn" style="background:linear-gradient(90deg, var(--blue-accent), var(--magenta));" onclick="openSendModal('rep')">✉ Send report to rep</button>
+        <button class="refresh-btn" style="background:linear-gradient(90deg, var(--navy-deep), var(--purple));" onclick="openSendModal('company')">✉ Send company-wide report to me</button>
       </div>
       <div class="section-sub" id="collectionStatus"></div>
     </div>
@@ -412,6 +413,10 @@
         <!-- STEP 1: COMPOSE -->
         <div class="send-modal-body" id="sendStepCompose">
           <div class="send-field">
+            <label>Attachment</label>
+            <div><span class="preview-file-chip" id="composeFileChip">📎 file.xlsx</span></div>
+          </div>
+          <div class="send-field">
             <label>Sending report for</label>
             <input type="text" id="sendRepName" readonly style="opacity:0.85;">
           </div>
@@ -423,12 +428,22 @@
           </div>
           <div class="send-field-row">
             <div class="send-field">
-              <label>CC <span style="text-transform:none; font-weight:400;">(optional)</span></label>
+              <label>CC <span style="text-transform:none; font-weight:400;">(optional, defaults shown below)</span></label>
               <input type="text" id="sendCc" placeholder="name@company.com, name2@company.com">
             </div>
             <div class="send-field">
               <label>BCC <span style="text-transform:none; font-weight:400;">(optional)</span></label>
               <input type="text" id="sendBcc" placeholder="name@company.com">
+            </div>
+          </div>
+          <div class="send-field-row">
+            <div class="send-field">
+              <label>Your name (signature)</label>
+              <input type="text" id="sendSenderName" placeholder="Pauline Lucena">
+            </div>
+            <div class="send-field">
+              <label>Your title (signature)</label>
+              <input type="text" id="sendSenderTitle" placeholder="Accounting Analyst">
             </div>
           </div>
           <div class="send-field">
@@ -438,10 +453,10 @@
           <div class="send-field">
             <label>Message</label>
             <textarea id="sendBody"></textarea>
-            <div class="hint">Placeholders you can use: <code>{{rep}}</code>, <code>{{date}}</code>, <code>{{invoice_count}}</code>, <code>{{total_due}}</code>. Click "Save as default message" to reuse this text next time.</div>
+            <div class="hint">Placeholders you can use: <code>{{rep}}</code>, <code>{{date}}</code>, <code>{{invoice_count}}</code>, <code>{{total_due}}</code>, <code>{{sender_name}}</code>, <code>{{sender_title}}</code>. Click "Save as default" to reuse this message, CC list, and signature next time.</div>
           </div>
           <div class="send-field" style="margin-bottom:0;">
-            <button class="send-btn-secondary" onclick="saveEmailTemplateDefault()" type="button">💾 Save as default message</button>
+            <button class="send-btn-secondary" onclick="saveEmailTemplateDefault()" type="button">💾 Save as default</button>
             <span id="templateSavedNote" style="font-size:11px; color:var(--text-muted); margin-left:8px;"></span>
           </div>
         </div>
@@ -1249,24 +1264,39 @@ async function downloadCompanyReport() {
 /* ===================== SEND REPORT TO REP (email compose/preview) ===================== */
 
 const DEFAULT_EMAIL_SUBJECT = 'Q1 Media - Collections Report for {{rep}} - {{date}}';
+const DEFAULT_EMAIL_CC = 'jaime.skalla@q1media.com, accounting@q1media.com';
+const DEFAULT_SENDER_NAME = 'Pauline Lucena';
+const DEFAULT_SENDER_TITLE = 'Accounting Analyst';
 const DEFAULT_EMAIL_BODY =
-'Hi {{rep}},\n\n' +
-'Attached is your collections report as of {{date}}, covering {{invoice_count}} past-due invoice(s) totaling {{total_due}}.\n\n' +
-'Please review and follow up with the accounts listed, especially anything flagged 60+ days overdue. Let me know if you have any questions.\n\n' +
-'Thank you,\nPauline Lucena\nAccounting & Finance';
+'{{rep}},\n\n' +
+'All accounts that are beyond 60 days will need to be contacted. Please send an email to accounting@q1media.com with payment status. Thank you!!\n\n' +
+'Before you reach out to your client list below, here are a few reminders that will help you get the most out of the collections report:\n\n' +
+'• The collections report is an "open balance" report. If you don\'t see an invoice listed, that means payment has been received.\n\n' +
+'• The collections report is a snapshot of the account as of today. If a client sent a check a few days ago, we may not have received it yet. Thus, the report will still show an open balance.\n\n' +
+'Thank you!\n\n' +
+'Best regards,\n{{sender_name}}\n{{sender_title}}\nQ1 Media';
+
+let currentSendMode = 'rep';
+let currentSendRep = '';
 
 function getSavedEmailTemplate() {
   return {
     subject: localStorage.getItem('ar_dashboard_email_subject') || DEFAULT_EMAIL_SUBJECT,
-    body: localStorage.getItem('ar_dashboard_email_body') || DEFAULT_EMAIL_BODY
+    body: localStorage.getItem('ar_dashboard_email_body') || DEFAULT_EMAIL_BODY,
+    cc: localStorage.getItem('ar_dashboard_email_cc') || DEFAULT_EMAIL_CC,
+    senderName: localStorage.getItem('ar_dashboard_sender_name') || DEFAULT_SENDER_NAME,
+    senderTitle: localStorage.getItem('ar_dashboard_sender_title') || DEFAULT_SENDER_TITLE
   };
 }
 
 function saveEmailTemplateDefault() {
   localStorage.setItem('ar_dashboard_email_subject', document.getElementById('sendSubject').value);
   localStorage.setItem('ar_dashboard_email_body', document.getElementById('sendBody').value);
+  localStorage.setItem('ar_dashboard_email_cc', document.getElementById('sendCc').value);
+  localStorage.setItem('ar_dashboard_sender_name', document.getElementById('sendSenderName').value);
+  localStorage.setItem('ar_dashboard_sender_title', document.getElementById('sendSenderTitle').value);
   const note = document.getElementById('templateSavedNote');
-  note.textContent = 'Saved ✓ — this will be your default message next time.';
+  note.textContent = 'Saved ✓ — this will be your default next time.';
   setTimeout(() => { note.textContent = ''; }, 3500);
 }
 
@@ -1281,32 +1311,58 @@ function repReportStats(rep) {
   return { count: repRows.length, total: fmtMoney(total) };
 }
 
-function fillPlaceholders(text, rep) {
-  const stats = repReportStats(rep);
-  const d = new Date();
-  const dateStr = d.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
-  return (text || '')
-    .replace(/\{\{rep\}\}/g, rep)
-    .replace(/\{\{date\}\}/g, dateStr)
-    .replace(/\{\{invoice_count\}\}/g, stats.count)
-    .replace(/\{\{total_due\}\}/g, stats.total);
+function companyReportStats() {
+  const rows = ALL_DATA.filter(r => !r.legal && r.days_overdue != null && r.days_overdue > 0);
+  const total = rows.reduce((s, r) => s + r.amount, 0);
+  return { count: rows.length, total: fmtMoney(total) };
 }
 
-function openSendModal() {
-  const rep = document.getElementById('collectionRepSelect').value;
+function currentAttachmentFilename(mode, rep) {
+  return mode === 'company' ? (reportDatePrefix() + '.xlsx') : (reportDatePrefix() + ' - ' + rep + '.xlsx');
+}
+
+function fillPlaceholders(text, rep, mode) {
+  const stats = (mode === 'company') ? companyReportStats() : repReportStats(rep);
+  const d = new Date();
+  const dateStr = d.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  const senderName = (document.getElementById('sendSenderName').value || DEFAULT_SENDER_NAME).trim();
+  const senderTitle = (document.getElementById('sendSenderTitle').value || DEFAULT_SENDER_TITLE).trim();
+  return (text || '')
+    .replace(/\{\{rep\}\}/g, mode === 'company' ? 'All Reps' : rep)
+    .replace(/\{\{date\}\}/g, dateStr)
+    .replace(/\{\{invoice_count\}\}/g, stats.count)
+    .replace(/\{\{total_due\}\}/g, stats.total)
+    .replace(/\{\{sender_name\}\}/g, senderName)
+    .replace(/\{\{sender_title\}\}/g, senderTitle);
+}
+
+function openSendModal(mode) {
+  mode = mode || 'rep';
+  currentSendMode = mode;
   const statusEl = document.getElementById('collectionStatus');
-  if (!rep) { statusEl.textContent = 'Please select a rep first, then click "Send report to rep".'; return; }
+  let rep = '';
+  if (mode === 'rep') {
+    rep = document.getElementById('collectionRepSelect').value;
+    if (!rep) { statusEl.textContent = 'Please select a rep first, then click "Send report to rep".'; return; }
+  }
+  currentSendRep = rep;
   statusEl.textContent = '';
 
-  document.getElementById('sendRepName').value = rep;
-  document.getElementById('sendTo').value = getRepEmail(rep);
-  document.getElementById('sendCc').value = '';
+  document.getElementById('sendRepName').value = mode === 'company' ? 'All Reps (Company-wide report)' : rep;
+  document.getElementById('sendTo').value = mode === 'company'
+    ? (localStorage.getItem('ar_dashboard_my_email') || '')
+    : getRepEmail(rep);
   document.getElementById('sendBcc').value = '';
 
   const tmpl = getSavedEmailTemplate();
+  document.getElementById('sendCc').value = tmpl.cc;
   document.getElementById('sendSubject').value = tmpl.subject;
   document.getElementById('sendBody').value = tmpl.body;
+  document.getElementById('sendSenderName').value = tmpl.senderName;
+  document.getElementById('sendSenderTitle').value = tmpl.senderTitle;
   document.getElementById('templateSavedNote').textContent = '';
+
+  document.getElementById('composeFileChip').textContent = '📎 ' + currentAttachmentFilename(mode, rep);
 
   showComposeStep();
   document.getElementById('sendModalOverlay').classList.add('open');
@@ -1323,7 +1379,9 @@ function showComposeStep() {
   document.getElementById('sendPreviewBtn').style.display = 'inline-block';
   document.getElementById('sendFinalBtn').style.display = 'none';
   document.getElementById('sendModalStepLabel').textContent = 'Step 1 of 2';
-  document.getElementById('sendModalTitle').textContent = 'Compose report email';
+  document.getElementById('sendModalTitle').textContent = currentSendMode === 'company'
+    ? 'Compose company-wide report email'
+    : 'Compose report email';
 }
 
 function backToCompose() {
@@ -1331,10 +1389,11 @@ function backToCompose() {
 }
 
 function goToPreview() {
-  const rep = document.getElementById('sendRepName').value;
+  const rep = currentSendRep;
+  const displayName = document.getElementById('sendRepName').value;
   const to = document.getElementById('sendTo').value.trim();
   if (!to) {
-    alert('Please enter a "To" email address before previewing (the rep has no email on file in the sheet, so you\'ll need to type it in).');
+    alert('Please enter a "To" email address before previewing' + (currentSendMode === 'rep' ? ' (the rep has no email on file in the sheet, so you\'ll need to type it in).' : '.'));
     return;
   }
   const cc = document.getElementById('sendCc').value.trim();
@@ -1342,16 +1401,16 @@ function goToPreview() {
   const subjectRaw = document.getElementById('sendSubject').value;
   const bodyRaw = document.getElementById('sendBody').value;
 
-  const filename = reportDatePrefix() + ' - ' + rep + '.xlsx';
+  const filename = currentAttachmentFilename(currentSendMode, rep);
 
   document.getElementById('previewFileChip').textContent = '📎 ' + filename;
-  document.getElementById('previewTo').innerHTML = to ? (rep + ' &lt;' + to + '&gt;') : '<span class="pr-value empty">(none entered)</span>';
+  document.getElementById('previewTo').innerHTML = to ? (displayName + ' &lt;' + to + '&gt;') : '<span class="pr-value empty">(none entered)</span>';
   const ccEl = document.getElementById('previewCc');
   ccEl.innerHTML = cc ? cc : '<span class="empty">(none)</span>';
   const bccEl = document.getElementById('previewBcc');
   bccEl.innerHTML = bcc ? bcc : '<span class="empty">(none)</span>';
-  document.getElementById('previewSubject').textContent = fillPlaceholders(subjectRaw, rep);
-  document.getElementById('previewBody').textContent = fillPlaceholders(bodyRaw, rep);
+  document.getElementById('previewSubject').textContent = fillPlaceholders(subjectRaw, rep, currentSendMode);
+  document.getElementById('previewBody').textContent = fillPlaceholders(bodyRaw, rep, currentSendMode);
 
   document.getElementById('sendStepCompose').style.display = 'none';
   document.getElementById('sendStepPreview').style.display = 'block';
@@ -1363,12 +1422,13 @@ function goToPreview() {
 }
 
 async function sendReportEmail() {
-  const rep = document.getElementById('sendRepName').value;
+  const rep = currentSendRep;
+  const displayName = document.getElementById('sendRepName').value;
   const to = document.getElementById('sendTo').value.trim();
   const cc = document.getElementById('sendCc').value.trim();
   const bcc = document.getElementById('sendBcc').value.trim();
-  const subject = fillPlaceholders(document.getElementById('sendSubject').value, rep);
-  const body = fillPlaceholders(document.getElementById('sendBody').value, rep);
+  const subject = fillPlaceholders(document.getElementById('sendSubject').value, rep, currentSendMode);
+  const body = fillPlaceholders(document.getElementById('sendBody').value, rep, currentSendMode);
   const statusEl = document.getElementById('collectionStatus');
 
   const finalBtn = document.getElementById('sendFinalBtn');
@@ -1376,9 +1436,9 @@ async function sendReportEmail() {
   finalBtn.textContent = 'Building report...';
 
   try {
-    const wb = await buildRepWorkbook(rep);
+    const wb = currentSendMode === 'company' ? await buildCompanyWorkbook() : await buildRepWorkbook(rep);
     const buf = await wb.xlsx.writeBuffer();
-    const filename = reportDatePrefix() + ' - ' + rep + '.xlsx';
+    const filename = currentAttachmentFilename(currentSendMode, rep);
     triggerBlobDownload(new Blob([buf], {type:'application/octet-stream'}), filename);
 
     let mailto = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
@@ -1387,7 +1447,11 @@ async function sendReportEmail() {
 
     window.location.href = mailto;
 
-    statusEl.textContent = 'Downloaded "' + filename + '" and opened your email app for ' + rep + ' — attach the downloaded file, then hit send.';
+    if (currentSendMode === 'company' && to) {
+      localStorage.setItem('ar_dashboard_my_email', to);
+    }
+
+    statusEl.textContent = 'Downloaded "' + filename + '" and opened your email app for ' + displayName + ' — attach the downloaded file, then hit send.';
     closeSendModal();
   } catch (err) {
     console.error(err);

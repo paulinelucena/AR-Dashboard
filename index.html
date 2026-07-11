@@ -637,12 +637,32 @@ function renderAging() {
     data: { labels: BUCKET_ORDER, datasets: [{ label: 'Amount Due', data: chartData, backgroundColor: BUCKET_ORDER.map(b => BUCKET_COLORS[b]), borderRadius: 4 }] },
     options: {
       responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 24 } },
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => '$' + ctx.parsed.y.toLocaleString() } } },
       scales: {
         y: { ticks: { callback: (v) => '$' + (v/1000).toFixed(0) + 'K', color: colors.text }, grid: { color: colors.grid } },
         x: { ticks: { color: colors.text }, grid: { display: false } }
       }
-    }
+    },
+    plugins: [{
+      id: 'agingValueLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        chart.data.datasets.forEach((dataset, i) => {
+          const meta = chart.getDatasetMeta(i);
+          meta.data.forEach((bar, index) => {
+            const value = dataset.data[index];
+            if (value == null) return;
+            ctx.save();
+            ctx.fillStyle = colors.textStrong;
+            ctx.font = '600 12px Sora, Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('$' + Math.round(value).toLocaleString(), bar.x, bar.y - 8);
+            ctx.restore();
+          });
+        });
+      }
+    }]
   });
 }
 

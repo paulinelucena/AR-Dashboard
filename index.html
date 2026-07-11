@@ -28,6 +28,8 @@
     --text-muted: #8A85AE;
     --table-border: #262E5C;
     --setup-bg: #241A3D;
+    --danger-bg: rgba(192,57,43,0.16);
+    --danger-text: #FF9B8E;
   }
   html[data-theme="light"] {
     --bg-page: #FFFFFF;
@@ -41,6 +43,8 @@
     --text-muted: #9A8FB0;
     --table-border: #F1EDF7;
     --setup-bg: #FBEFFA;
+    --danger-bg: #FDECEA;
+    --danger-text: #7A1F1F;
   }
   body { margin:0; font-family:'Sora', Arial, sans-serif; background:var(--bg-page); color:var(--text-primary); transition:background 0.2s ease, color 0.2s ease; }
   .container { max-width:100%; margin:0; background:var(--bg-container); }
@@ -62,7 +66,7 @@
   .setup-banner input { width:100%; max-width:640px; padding:9px 12px; font-size:13px; border:1px solid var(--border-color); border-radius:8px; font-family:inherit; margin-top:6px; background:var(--bg-input); color:var(--text-primary); }
   .setup-banner .save-btn { background:linear-gradient(90deg, var(--magenta) 0%, var(--magenta-dark) 100%); color:#fff; border:none; padding:10px 20px; border-radius:999px; font-size:13px; font-weight:600; cursor:pointer; margin-top:10px; margin-right:8px; }
 
-  .error-banner { padding:16px var(--gutter); background:#FDECEA; border-bottom:2px solid var(--danger); font-size:13px; color:#7A1F1F; }
+  .error-banner { padding:16px var(--gutter); background:var(--danger-bg); border-bottom:2px solid var(--danger); font-size:13px; color:var(--danger-text); }
 
   .kpi-strip { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; padding:28px var(--gutter); background:var(--bg-container); border-bottom:1px solid var(--border-color); }
   .kpi { padding:20px 22px; border-left:4px solid; border-radius:12px; background:var(--bg-card); transition:transform 0.15s ease, background 0.2s ease; }
@@ -108,6 +112,10 @@
   .full-table { font-size:12px; }
   .full-table th { cursor:pointer; user-select:none; position:sticky; top:0; background:var(--bg-container); }
   .full-table th:hover { color:var(--magenta); }
+  .full-table th[data-sort]::after { content:''; display:inline-block; width:10px; }
+  .full-table th.sort-active { color:var(--magenta); }
+  .full-table th.sort-active::after { content:'▲'; font-size:9px; margin-left:4px; }
+  .full-table th.sort-active.sort-desc::after { content:'▼'; }
   .table-scroll { max-height:600px; overflow-y:auto; border:1px solid var(--border-color); border-radius:10px; }
   .badge { display:inline-block; padding:2px 8px; border-radius:10px; color:#FFFFFF; font-size:10px; font-weight:700; }
 
@@ -792,6 +800,11 @@ function renderTable() {
     const av = a[sortCol], bv = b[sortCol];
     if (typeof av === 'number' && typeof bv === 'number') return sortAsc ? av-bv : bv-av;
     return sortAsc ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+  });
+  document.querySelectorAll('#fullTable th[data-sort]').forEach(th => {
+    const active = th.dataset.sort === sortCol;
+    th.classList.toggle('sort-active', active);
+    th.classList.toggle('sort-desc', active && !sortAsc);
   });
   const tot = filtered.reduce((s,r) => s + r.amount, 0);
   document.getElementById('rowCount').textContent = filtered.length + ' invoices · ' + fmtMoney(tot) + ' total';

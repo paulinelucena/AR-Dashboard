@@ -16,9 +16,34 @@
     --danger: #C0392B;
     --warn: #E8590C;
     --gutter: clamp(20px, 5vw, 64px);
+
+    --bg-page: #0B1130;
+    --bg-container: #0B1130;
+    --bg-card: #161D45;
+    --bg-card-hover: #1B2350;
+    --bg-input: #1B2350;
+    --border-color: #2A3363;
+    --text-primary: #FFFFFF;
+    --text-secondary: #B7B0D6;
+    --text-muted: #8A85AE;
+    --table-border: #262E5C;
+    --setup-bg: #241A3D;
   }
-  body { margin:0; font-family:'Sora', Arial, sans-serif; background:#FFFFFF; color:#1B1338; }
-  .container { max-width:100%; margin:0; background:#FFFFFF; }
+  html[data-theme="light"] {
+    --bg-page: #FFFFFF;
+    --bg-container: #FFFFFF;
+    --bg-card: #FAF8FD;
+    --bg-card-hover: #FAF7FD;
+    --bg-input: #FFFFFF;
+    --border-color: #ECE7F5;
+    --text-primary: #1B1338;
+    --text-secondary: #7A6E93;
+    --text-muted: #9A8FB0;
+    --table-border: #F1EDF7;
+    --setup-bg: #FBEFFA;
+  }
+  body { margin:0; font-family:'Sora', Arial, sans-serif; background:var(--bg-page); color:var(--text-primary); transition:background 0.2s ease, color 0.2s ease; }
+  .container { max-width:100%; margin:0; background:var(--bg-container); }
 
   .top-strip { height:6px; background:linear-gradient(90deg, var(--purple) 0%, var(--navy-mid) 50%, var(--blue-accent) 100%); }
 
@@ -29,26 +54,28 @@
   .refresh-btn { background:linear-gradient(90deg, var(--magenta) 0%, var(--magenta-dark) 100%); color:#fff; border:none; padding:12px 24px; border-radius:999px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; height:fit-content; box-shadow:0 4px 14px rgba(196,23,156,0.35); }
   .refresh-btn:hover { filter:brightness(1.08); }
   .refresh-btn:disabled { opacity:0.6; cursor:default; }
+  .theme-toggle-btn { background:rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.3); padding:11px 18px; border-radius:999px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; height:fit-content; white-space:nowrap; }
+  .theme-toggle-btn:hover { background:rgba(255,255,255,0.22); }
 
-  .setup-banner { padding:20px var(--gutter); background:#FBEFFA; border-bottom:2px solid var(--magenta); font-size:13px; color:#3A2050; line-height:1.6; }
-  .setup-banner code { background:#FFF; padding:2px 6px; border-radius:3px; border:1px solid #E4C6E0; }
-  .setup-banner input { width:100%; max-width:640px; padding:9px 12px; font-size:13px; border:1px solid #D9C2E0; border-radius:8px; font-family:inherit; margin-top:6px; }
+  .setup-banner { padding:20px var(--gutter); background:var(--setup-bg); border-bottom:2px solid var(--magenta); font-size:13px; color:var(--text-primary); line-height:1.6; }
+  .setup-banner code { background:var(--bg-card); padding:2px 6px; border-radius:3px; border:1px solid var(--border-color); }
+  .setup-banner input { width:100%; max-width:640px; padding:9px 12px; font-size:13px; border:1px solid var(--border-color); border-radius:8px; font-family:inherit; margin-top:6px; background:var(--bg-input); color:var(--text-primary); }
   .setup-banner .save-btn { background:linear-gradient(90deg, var(--magenta) 0%, var(--magenta-dark) 100%); color:#fff; border:none; padding:10px 20px; border-radius:999px; font-size:13px; font-weight:600; cursor:pointer; margin-top:10px; margin-right:8px; }
 
   .error-banner { padding:16px var(--gutter); background:#FDECEA; border-bottom:2px solid var(--danger); font-size:13px; color:#7A1F1F; }
 
-  .kpi-strip { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; padding:28px var(--gutter); background:#FFFFFF; border-bottom:1px solid #ECE7F5; }
-  .kpi { padding:20px 22px; border-left:4px solid; border-radius:12px; background:#FAF8FD; transition:transform 0.15s ease; }
+  .kpi-strip { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; padding:28px var(--gutter); background:var(--bg-container); border-bottom:1px solid var(--border-color); }
+  .kpi { padding:20px 22px; border-left:4px solid; border-radius:12px; background:var(--bg-card); transition:transform 0.15s ease, background 0.2s ease; }
   .kpi:hover { transform:translateY(-2px); }
   .k-blue { border-color:var(--blue-accent); }
   .k-red { border-color:var(--danger); }
   .k-orange { border-color:var(--magenta); }
   .k-teal { border-color:var(--purple); }
-  .kpi .label { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:#7A6E93; font-weight:700; }
-  .kpi .value { font-size:27px; font-weight:800; margin-top:6px; color:var(--navy-deep); }
-  .kpi .sub { font-size:11px; color:#9A8FB0; margin-top:2px; }
+  .kpi .label { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-secondary); font-weight:700; }
+  .kpi .value { font-size:27px; font-weight:800; margin-top:6px; color:var(--text-primary); }
+  .kpi .sub { font-size:11px; color:var(--text-muted); margin-top:2px; }
 
-  .section { padding:28px var(--gutter); border-bottom:1px solid #ECE7F5; }
+  .section { padding:28px var(--gutter); border-bottom:1px solid var(--border-color); }
   
   /* Accordion Custom Styling */
   .accordion-header { cursor: pointer; user-select: none; display: flex; flex-direction: column; position: relative; }
@@ -58,34 +85,34 @@
   .section.collapsed .accordion-content { display: none; }
 
   .section-label { font-size:12px; text-transform:uppercase; letter-spacing:1.5px; color:var(--magenta); font-weight:700; margin-bottom:4px; }
-  .section-sub { font-size:12px; color:#8A7EA0; margin-bottom:16px; width: 95%; }
+  .section-sub { font-size:12px; color:var(--text-secondary); margin-bottom:16px; width: 95%; }
 
   table { width:100%; border-collapse:collapse; font-size:13px; }
-  th { text-align:left; padding:8px 10px; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#8A7EA0; border-bottom:2px solid var(--navy-deep); font-weight:700; }
-  td { padding:8px 10px; border-bottom:1px solid #F1EDF7; }
+  th { text-align:left; padding:8px 10px; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); border-bottom:2px solid var(--border-color); font-weight:700; }
+  td { padding:8px 10px; border-bottom:1px solid var(--table-border); color:var(--text-primary); }
   td.amt, th.amt { text-align:right; font-variant-numeric:tabular-nums; }
-  tr:hover { background:#FAF7FD; }
+  tr:hover { background:var(--bg-card-hover); }
 
   .bucket-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px; vertical-align:middle; }
 
   .two-col { display:flex; gap:24px; flex-wrap:wrap; }
   .two-col > div { flex:1; min-width:280px; }
 
-  .chart-wrap { background:#FAF8FD; border:1px solid #ECE7F5; padding:14px; border-radius:10px; }
+  .chart-wrap { background:var(--bg-card); border:1px solid var(--border-color); padding:14px; border-radius:10px; }
 
   .table-controls { display:flex; gap:12px; margin-bottom:12px; align-items:center; flex-wrap:wrap; }
-  .table-controls input, .table-controls select { padding:8px 12px; font-size:13px; border:1px solid #D9D2E8; border-radius:8px; font-family:inherit; }
+  .table-controls input, .table-controls select { padding:8px 12px; font-size:13px; border:1px solid var(--border-color); border-radius:8px; font-family:inherit; background:var(--bg-input); color:var(--text-primary); }
   .table-controls input { flex:1; min-width:160px; }
 
   .full-table { font-size:12px; }
-  .full-table th { cursor:pointer; user-select:none; position:sticky; top:0; background:#FFFFFF; }
+  .full-table th { cursor:pointer; user-select:none; position:sticky; top:0; background:var(--bg-container); }
   .full-table th:hover { color:var(--magenta); }
-  .table-scroll { max-height:600px; overflow-y:auto; border:1px solid #ECE7F5; border-radius:10px; }
+  .table-scroll { max-height:600px; overflow-y:auto; border:1px solid var(--border-color); border-radius:10px; }
   .badge { display:inline-block; padding:2px 8px; border-radius:10px; color:#FFFFFF; font-size:10px; font-weight:700; }
 
   .footer { background:var(--navy-deep); color:#FFFFFF; text-align:center; padding:16px; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; }
 
-  .loading { padding:80px var(--gutter); text-align:center; color:#9A8FB0; font-size:14px; }
+  .loading { padding:80px var(--gutter); text-align:center; color:var(--text-muted); font-size:14px; }
 
   /* Floating Style Context */
   .section.floating-collection {
@@ -94,8 +121,8 @@
     right: 24px;
     width: 450px;
     max-width: calc(100vw - 48px);
-    background: #FFFFFF;
-    box-shadow: 0 12px 36px rgba(16,25,59,0.2);
+    background: var(--bg-container);
+    box-shadow: 0 12px 36px rgba(0,0,0,0.35);
     border: 2px solid var(--purple);
     border-radius: 16px;
     z-index: 1000;
@@ -115,8 +142,8 @@
   }
   .minimal-freeze-btn {
     background: transparent;
-    color: #7A6E93;
-    border: 1px solid #D9D2E8;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
     padding: 6px 14px;
     border-radius: 8px;
     font-size: 11px;
@@ -127,7 +154,7 @@
     white-space: nowrap;
   }
   .minimal-freeze-btn:hover {
-    background: #FAF8FD;
+    background: var(--bg-card-hover);
     border-color: var(--purple);
     color: var(--purple);
   }
@@ -155,7 +182,10 @@
       <div class="title" id="headerTitle">Live from Google Sheets</div>
       <div class="sub" id="headerSub">Overdue invoices only (past due date) · Data pulled live from your published Google Sheet</div>
     </div>
-    <button class="refresh-btn" id="refreshBtn" onclick="loadData()">Refresh data</button>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">☀️ Light mode</button>
+      <button class="refresh-btn" id="refreshBtn" onclick="loadData()">Refresh data</button>
+    </div>
   </div>
 
   <!-- SETUP BANNER (shown until a sheet URL is configured) -->
@@ -214,6 +244,10 @@
             </thead>
             <tbody id="agingTableBody"></tbody>
           </table>
+          <div style="margin-top:20px;">
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-secondary); font-weight:700; margin-bottom:8px;">Accounts Receivable by Year</div>
+            <div class="chart-wrap"><canvas id="yearChart" height="170"></canvas></div>
+          </div>
         </div>
         <div>
           <div class="chart-wrap"><canvas id="agingChart" height="220"></canvas></div>
@@ -337,6 +371,7 @@ let ALL_DATA = [];
 let sortCol = 'amount';
 let sortAsc = false;
 let chartInstance = null;
+let yearChartInstance = null;
 
 function fmtMoney(v) { return '$' + Math.round(v).toLocaleString('en-US'); }
 
@@ -437,6 +472,37 @@ function toggleFreezeCollection() {
   document.addEventListener('pointercancel', stopDrag);
 })();
 
+function currentThemeColors() {
+  const styles = getComputedStyle(document.documentElement);
+  return {
+    text: styles.getPropertyValue('--text-secondary').trim() || '#7A6E93',
+    textStrong: styles.getPropertyValue('--text-primary').trim() || '#1B1338',
+    grid: styles.getPropertyValue('--border-color').trim() || '#ECE7F5',
+  };
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = theme === 'light' ? '🌙 Dark mode' : '☀️ Light mode';
+  localStorage.setItem('ar_dashboard_theme', theme);
+  // Rebuild charts so Chart.js re-reads the new CSS colors
+  if (typeof AR_DATA !== 'undefined' && AR_DATA.length) {
+    renderAging();
+    renderYearChart();
+  }
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  applyTheme(current === 'light' ? 'dark' : 'light');
+}
+
+(function initTheme() {
+  const saved = localStorage.getItem('ar_dashboard_theme');
+  applyTheme(saved === 'light' ? 'light' : 'dark');
+})();
+
 async function loadData() {
   if (!SHEET_CSV_URL) {
     document.getElementById('setupBanner').style.display = 'block';
@@ -509,6 +575,7 @@ function renderAll() {
   renderFlaggedBanners();
   renderKPIs();
   renderAging();
+  renderYearChart();
   renderTopCustomers();
   renderRepBreakdown();
   populateFilters();
@@ -525,7 +592,7 @@ function renderFlaggedBanners() {
   const wrap = document.getElementById('flaggedAccountsWrap');
   wrap.innerHTML = Object.keys(seen).map(cust => {
     const f = seen[cust];
-    return '<div style="margin:20px var(--gutter) 0 var(--gutter); padding:12px 16px; background:#FBEFFA; border-left:4px solid ' + (f.color || '#C4179C') + '; border-radius:8px; font-size:13px; color:#3A2050; line-height:1.5;">' +
+    return '<div style="margin:20px var(--gutter) 0 var(--gutter); padding:12px 16px; background:var(--setup-bg); border-left:4px solid ' + (f.color || '#C4179C') + '; border-radius:8px; font-size:13px; color:var(--text-primary); line-height:1.5;">' +
       '<strong>Note - ' + cust + ' (' + f.label + '):</strong> ' + f.note + '</div>';
   }).join('');
 }
@@ -564,14 +631,70 @@ function renderAging() {
   }).join('');
 
   if (chartInstance) chartInstance.destroy();
+  const colors = currentThemeColors();
   chartInstance = new Chart(document.getElementById('agingChart'), {
     type: 'bar',
     data: { labels: BUCKET_ORDER, datasets: [{ label: 'Amount Due', data: chartData, backgroundColor: BUCKET_ORDER.map(b => BUCKET_COLORS[b]), borderRadius: 4 }] },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => '$' + ctx.parsed.y.toLocaleString() } } },
-      scales: { y: { ticks: { callback: (v) => '$' + (v/1000).toFixed(0) + 'K' }, grid: { color:'#EAEAEA' } }, x: { grid: { display: false } } }
+      scales: {
+        y: { ticks: { callback: (v) => '$' + (v/1000).toFixed(0) + 'K', color: colors.text }, grid: { color: colors.grid } },
+        x: { ticks: { color: colors.text }, grid: { display: false } }
+      }
     }
+  });
+}
+
+function renderYearChart() {
+  const groups = {};
+  AR_DATA.forEach(r => {
+    const parts = String(r.invoice_date || '').split('/');
+    const year = parts.length === 3 ? parts[2] : null;
+    if (!year) return;
+    groups[year] = (groups[year] || 0) + r.amount;
+  });
+  const years = Object.keys(groups).sort();
+  const values = years.map(y => groups[y]);
+
+  if (yearChartInstance) yearChartInstance.destroy();
+  const colors = currentThemeColors();
+  const canvas = document.getElementById('yearChart');
+  if (!canvas) return;
+
+  yearChartInstance = new Chart(canvas, {
+    type: 'bar',
+    data: { labels: years, datasets: [{ label: 'Amount Due', data: values, backgroundColor: '#2F63C7', borderRadius: 4 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => '$' + Math.round(ctx.parsed.y).toLocaleString() } }
+      },
+      scales: {
+        y: { ticks: { callback: (v) => '$' + (v/1000).toFixed(0) + 'K', color: colors.text }, grid: { color: colors.grid } },
+        x: { ticks: { color: colors.text }, grid: { display: false } }
+      }
+    },
+    plugins: [{
+      id: 'yearValueLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        chart.data.datasets.forEach((dataset, i) => {
+          const meta = chart.getDatasetMeta(i);
+          meta.data.forEach((bar, index) => {
+            const value = dataset.data[index];
+            if (value == null) return;
+            ctx.save();
+            ctx.fillStyle = colors.textStrong;
+            ctx.font = '600 11px Sora, Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('$' + Math.round(value).toLocaleString(), bar.x, bar.y - 6);
+            ctx.restore();
+          });
+        });
+      }
+    }]
   });
 }
 

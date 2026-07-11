@@ -222,6 +222,22 @@
   a.preview-file-chip:hover { background:var(--bg-card-hover); border-color:var(--magenta-dark); }
   .preview-body-text { white-space:pre-wrap; line-height:1.6; color:var(--text-primary); margin-top:4px; }
   .send-warning { font-size:12px; color:var(--warn); background:rgba(232,89,12,0.12); border:1px solid var(--warn); border-radius:8px; padding:10px 14px; margin-top:14px; line-height:1.5; }
+
+  .file-preview-overlay { display:none; position:fixed; inset:0; background:rgba(8,10,28,0.75); z-index:1100; align-items:center; justify-content:center; padding:20px; }
+  .file-preview-overlay.open { display:flex; }
+  .file-preview-modal { background:var(--bg-card); border:1px solid var(--border-color); border-radius:16px; width:100%; max-width:1100px; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+  .file-preview-header { padding:18px 24px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  .file-preview-header h3 { margin:0; font-size:15px; font-weight:800; color:var(--text-primary); word-break:break-word; }
+  .file-preview-close { background:none; border:none; color:var(--text-secondary); font-size:20px; cursor:pointer; line-height:1; padding:4px; }
+  .file-preview-close:hover { color:var(--text-primary); }
+  .file-preview-tabs { display:flex; gap:6px; padding:12px 24px 0 24px; border-bottom:1px solid var(--border-color); flex-wrap:wrap; }
+  .file-preview-tab { background:transparent; border:none; border-bottom:2px solid transparent; padding:8px 14px; font-size:12px; font-weight:700; color:var(--text-secondary); cursor:pointer; font-family:inherit; }
+  .file-preview-tab.active { color:var(--magenta); border-bottom-color:var(--magenta); }
+  .file-preview-tab:hover { color:var(--magenta); }
+  .file-preview-body { padding:16px 24px; overflow:auto; flex:1; }
+  .xlsx-preview-table { border-collapse:collapse; font-size:12px; }
+  .xlsx-preview-table td { border:1px solid var(--table-border); padding:5px 8px; white-space:nowrap; color:var(--text-primary); }
+  .file-preview-footer { padding:14px 24px; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:10px; }
 </style>
 </head>
 <body>
@@ -426,7 +442,7 @@
         <div class="send-modal-body" id="sendStepCompose">
           <div class="send-field">
             <label>Attachment</label>
-            <div><span class="preview-file-chip" id="composeFileChip">📎 file.xlsx</span></div>
+            <div><a href="#" class="preview-file-chip" id="composeFileChip" onclick="previewAttachmentNow(event)" title="Click to open/download this exact file and check it before sending" style="cursor:pointer; text-decoration:none;">📎 file.xlsx</a></div>
           </div>
           <div class="send-field">
             <label>Sending report for</label>
@@ -516,6 +532,22 @@
             <button class="send-btn-primary" id="sendPreviewBtn" onclick="goToPreview()">View before sending →</button>
             <button class="send-btn-primary" id="sendFinalBtn" style="display:none;" onclick="sendReportEmail()">Download &amp; open email ✉</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILE PREVIEW MODAL -->
+    <div class="file-preview-overlay" id="filePreviewOverlay">
+      <div class="file-preview-modal">
+        <div class="file-preview-header">
+          <h3 id="filePreviewTitle">📎 file.xlsx</h3>
+          <button class="file-preview-close" onclick="closeFilePreview()">✕</button>
+        </div>
+        <div class="file-preview-tabs" id="filePreviewTabs"></div>
+        <div class="file-preview-body" id="filePreviewBody"></div>
+        <div class="file-preview-footer">
+          <button class="send-btn-secondary" onclick="closeFilePreview()">Close</button>
+          <button class="send-btn-primary" id="filePreviewDownloadBtn">Download this file</button>
         </div>
       </div>
     </div>
@@ -1464,6 +1496,124 @@ function backToCompose() {
 }
 
 let currentPreviewBlobUrl = null;
+let currentPreviewWorkbook = null;
+
+function excelColToNum(col) {
+  let num = 0;
+  for (let i = 0; i < col.length; i++) num = num * 26 + (col.charCodeAt(i) - 64);
+  return num;
+}
+function parseCellAddress(addr) {
+  const m = addr.match(/^([A-Z]+)(\d+)$/);
+  return { col: excelColToNum(m[1]), row: parseInt(m[2]) };
+}
+function getMergeMap(ws) {
+  const merges = (ws.model && ws.model.merges) || [];
+  const skip = new Set();
+  const spanMap = {};
+  merges.forEach(range => {
+    const [startAddr, endAddr] = range.split(':');
+    const start = parseCellAddress(startAddr);
+    const end = parseCellAddress(endAddr);
+    spanMap[start.row + '_' + start.col] = { colspan: end.col - start.col + 1, rowspan: end.row - start.row + 1 };
+    for (let r = start.row; r <= end.row; r++) {
+      for (let c = start.col; c <= end.col; c++) {
+        if (r === start.row && c === start.col) continue;
+        skip.add(r + '_' + c);
+      }
+    }
+  });
+  return { skip, spanMap };
+}
+function escapeHtmlPreview(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function renderWorksheetToHTML(ws) {
+  const { skip, spanMap } = getMergeMap(ws);
+  const colCount = ws.columnCount || 1;
+  const rowCount = ws.rowCount || ws.actualRowCount || 1;
+  let html = '<table class="xlsx-preview-table"><tbody>';
+  for (let r = 1; r <= rowCount; r++) {
+    const row = ws.getRow(r);
+    html += '<tr>';
+    for (let c = 1; c <= colCount; c++) {
+      const key = r + '_' + c;
+      if (skip.has(key)) continue;
+      const cell = row.getCell(c);
+      let val = cell.value;
+      if (val && typeof val === 'object') {
+        if (val.richText) val = val.richText.map(rt => rt.text).join('');
+        else if (val instanceof Date) val = val.toLocaleDateString();
+        else if (val.text) val = val.text;
+        else val = '';
+      }
+      if (val == null) val = '';
+      if (typeof val === 'number' && cell.numFmt && cell.numFmt.indexOf('$') !== -1) {
+        val = '$' + val.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+      }
+      let style = '';
+      const font = cell.font;
+      if (font && font.bold) style += 'font-weight:700;';
+      if (font && font.color && font.color.argb) style += 'color:#' + font.color.argb.slice(2) + ';';
+      if (font && font.size) style += 'font-size:' + Math.max(11, font.size) + 'px;';
+      const fill = cell.fill;
+      if (fill && fill.type === 'pattern' && fill.fgColor && fill.fgColor.argb && fill.fgColor.argb !== '00000000') {
+        style += 'background:#' + fill.fgColor.argb.slice(2) + ';';
+      }
+      if (cell.alignment && cell.alignment.horizontal) style += 'text-align:' + cell.alignment.horizontal + ';';
+      const span = spanMap[key];
+      const attrs = span ? ' colspan="' + span.colspan + '" rowspan="' + span.rowspan + '"' : '';
+      html += '<td style="' + style + '"' + attrs + '>' + escapeHtmlPreview(String(val)) + '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
+function showFilePreviewTab(index) {
+  const ws = currentPreviewWorkbook.worksheets[index];
+  document.getElementById('filePreviewBody').innerHTML = renderWorksheetToHTML(ws);
+  document.querySelectorAll('.file-preview-tab').forEach((btn, i) => btn.classList.toggle('active', i === index));
+}
+function openFilePreviewModal(workbook, filename, blob) {
+  currentPreviewWorkbook = workbook;
+  document.getElementById('filePreviewTitle').textContent = '📎 ' + filename;
+  const tabsEl = document.getElementById('filePreviewTabs');
+  tabsEl.innerHTML = workbook.worksheets.map((ws, i) =>
+    '<button class="file-preview-tab' + (i === 0 ? ' active' : '') + '" onclick="showFilePreviewTab(' + i + ')">' + ws.name + '</button>'
+  ).join('');
+  showFilePreviewTab(0);
+  document.getElementById('filePreviewDownloadBtn').onclick = () => triggerBlobDownload(blob, filename);
+  document.getElementById('filePreviewOverlay').classList.add('open');
+}
+function closeFilePreview() {
+  document.getElementById('filePreviewOverlay').classList.remove('open');
+}
+
+async function previewAttachmentNow(evt) {
+  if (evt) evt.preventDefault();
+  const chip = evt ? evt.currentTarget : document.getElementById('composeFileChip');
+  const rep = currentSendRep;
+  const filename = currentAttachmentFilename(currentSendMode, rep);
+  const originalText = chip.textContent;
+  chip.textContent = '📎 Building ' + filename + '...';
+  chip.style.cursor = 'default';
+  try {
+    const wb = currentSendMode === 'company' ? await buildCompanyWorkbook() : await buildRepWorkbook(rep);
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], {type:'application/octet-stream'});
+    if (currentPreviewBlobUrl) URL.revokeObjectURL(currentPreviewBlobUrl);
+    currentPreviewBlobUrl = URL.createObjectURL(blob);
+    openFilePreviewModal(wb, filename, blob);
+    chip.textContent = originalText;
+    chip.style.cursor = 'pointer';
+  } catch (err) {
+    console.error(err);
+    chip.textContent = '⚠ Could not build ' + filename;
+    chip.style.cursor = 'pointer';
+    setTimeout(() => { chip.textContent = originalText; }, 2500);
+  }
+}
 
 async function goToPreview() {
   const rep = currentSendRep;
@@ -1484,6 +1634,7 @@ async function goToPreview() {
   chip.textContent = '📎 Building ' + filename + '...';
   chip.removeAttribute('href');
   chip.removeAttribute('download');
+  chip.onclick = (e) => e.preventDefault();
   chip.style.cursor = 'default';
 
   document.getElementById('previewTo').innerHTML = to ? (displayName + ' &lt;' + to + '&gt;') : '<span class="pr-value empty">(none entered)</span>';
@@ -1508,7 +1659,7 @@ async function goToPreview() {
   document.getElementById('sendModalStepLabel').textContent = 'Step 2 of 2';
   document.getElementById('sendModalTitle').textContent = 'Review before sending';
 
-  // Build the actual workbook now, so the attachment chip can open/download the exact file that will be sent.
+  // Build the actual workbook now, so the attachment chip can preview the exact file that will be sent.
   try {
     if (currentPreviewBlobUrl) {
       URL.revokeObjectURL(currentPreviewBlobUrl);
@@ -1519,10 +1670,9 @@ async function goToPreview() {
     const blob = new Blob([buf], {type:'application/octet-stream'});
     currentPreviewBlobUrl = URL.createObjectURL(blob);
 
-    chip.href = currentPreviewBlobUrl;
-    chip.setAttribute('download', filename);
+    chip.onclick = (e) => { e.preventDefault(); openFilePreviewModal(wb, filename, blob); };
     chip.style.cursor = 'pointer';
-    chip.textContent = '📎 ' + filename + ' (click to check it)';
+    chip.textContent = '📎 ' + filename + ' (click to view)';
   } catch (err) {
     console.error(err);
     chip.textContent = '⚠ Could not build ' + filename + ' — try again';
@@ -1596,6 +1746,9 @@ async function sendReportEmail() {
 
 document.getElementById('sendModalOverlay').addEventListener('click', function(e) {
   if (e.target === this) closeSendModal();
+});
+document.getElementById('filePreviewOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeFilePreview();
 });
 
 if (SHEET_CSV_URL) { document.getElementById('sheetUrlInput').value = SHEET_CSV_URL; }

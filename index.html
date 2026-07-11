@@ -1349,6 +1349,19 @@ function currentAttachmentFilename(mode, rep) {
   return mode === 'company' ? (reportDatePrefix() + '.xlsx') : (reportDatePrefix() + ' - ' + rep + '.xlsx');
 }
 
+function escapeHtml(str) {
+  return (str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function linkifyEmails(text) {
+  const escaped = escapeHtml(text);
+  return escaped.replace(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g,
+    '<a href="mailto:$1" style="color:var(--blue-accent); text-decoration:underline;">$1</a>');
+}
+
 function fillPlaceholders(text, rep, mode) {
   const stats = (mode === 'company') ? companyReportStats() : repReportStats(rep);
   const d = new Date();
@@ -1467,7 +1480,7 @@ function goToPreview() {
   const bccEl = document.getElementById('previewBcc');
   bccEl.innerHTML = bcc ? bcc : '<span class="empty">(none)</span>';
   document.getElementById('previewSubject').textContent = fillPlaceholders(subjectRaw, rep, currentSendMode);
-  document.getElementById('previewBody').textContent = fillPlaceholders(bodyRaw, rep, currentSendMode);
+  document.getElementById('previewBody').innerHTML = linkifyEmails(fillPlaceholders(bodyRaw, rep, currentSendMode));
 
   const apiConfigured = !!getEmailApiUrl();
   document.getElementById('sendWarningBox').innerHTML = apiConfigured

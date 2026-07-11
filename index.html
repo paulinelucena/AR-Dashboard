@@ -219,6 +219,7 @@
   .preview-row .pr-value { color:var(--text-primary); word-break:break-word; }
   .preview-row .pr-value.empty { color:var(--text-muted); font-style:italic; }
   .preview-file-chip { display:inline-flex; align-items:center; gap:6px; background:var(--setup-bg); border:1px solid var(--magenta); color:var(--text-primary); padding:5px 12px; border-radius:999px; font-size:12px; font-weight:600; }
+  a.preview-file-chip:hover { background:var(--bg-card-hover); border-color:var(--magenta-dark); }
   .preview-body-text { white-space:pre-wrap; line-height:1.6; color:var(--text-primary); margin-top:4px; }
   .send-warning { font-size:12px; color:var(--warn); background:rgba(232,89,12,0.12); border:1px solid var(--warn); border-radius:8px; padding:10px 14px; margin-top:14px; line-height:1.5; }
 </style>
@@ -478,7 +479,7 @@
           <div class="preview-box">
             <div class="preview-row">
               <div class="pr-label">Attachment</div>
-              <div class="pr-value"><span class="preview-file-chip" id="previewFileChip">📎 file.xlsx</span></div>
+              <div class="pr-value"><a href="#" class="preview-file-chip" id="previewFileChip" title="Click to open/download this exact file and check it before sending" style="cursor:pointer; text-decoration:none;">📎 file.xlsx</a></div>
             </div>
             <div class="preview-row">
               <div class="pr-label">To</div>
@@ -1413,6 +1414,10 @@ function openSendModal(mode) {
 
 function closeSendModal() {
   document.getElementById('sendModalOverlay').classList.remove('open');
+  if (currentPreviewBlobUrl) {
+    URL.revokeObjectURL(currentPreviewBlobUrl);
+    currentPreviewBlobUrl = null;
+  }
 }
 
 function showComposeStep() {
@@ -1458,7 +1463,9 @@ function backToCompose() {
   showComposeStep();
 }
 
-function goToPreview() {
+let currentPreviewBlobUrl = null;
+
+async function goToPreview() {
   const rep = currentSendRep;
   const displayName = document.getElementById('sendRepName').value;
   const to = document.getElementById('sendTo').value.trim();
@@ -1473,7 +1480,12 @@ function goToPreview() {
 
   const filename = currentAttachmentFilename(currentSendMode, rep);
 
-  document.getElementById('previewFileChip').textContent = '📎 ' + filename;
+  const chip = document.getElementById('previewFileChip');
+  chip.textContent = '📎 Building ' + filename + '...';
+  chip.removeAttribute('href');
+  chip.removeAttribute('download');
+  chip.style.cursor = 'default';
+
   document.getElementById('previewTo').innerHTML = to ? (displayName + ' &lt;' + to + '&gt;') : '<span class="pr-value empty">(none entered)</span>';
   const ccEl = document.getElementById('previewCc');
   ccEl.innerHTML = cc ? cc : '<span class="empty">(none)</span>';
@@ -1495,6 +1507,26 @@ function goToPreview() {
   document.getElementById('sendFinalBtn').style.display = 'inline-block';
   document.getElementById('sendModalStepLabel').textContent = 'Step 2 of 2';
   document.getElementById('sendModalTitle').textContent = 'Review before sending';
+
+  // Build the actual workbook now, so the attachment chip can open/download the exact file that will be sent.
+  try {
+    if (currentPreviewBlobUrl) {
+      URL.revokeObjectURL(currentPreviewBlobUrl);
+      currentPreviewBlobUrl = null;
+    }
+    const wb = currentSendMode === 'company' ? await buildCompanyWorkbook() : await buildRepWorkbook(rep);
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], {type:'application/octet-stream'});
+    currentPreviewBlobUrl = URL.createObjectURL(blob);
+
+    chip.href = currentPreviewBlobUrl;
+    chip.setAttribute('download', filename);
+    chip.style.cursor = 'pointer';
+    chip.textContent = '📎 ' + filename + ' (click to check it)';
+  } catch (err) {
+    console.error(err);
+    chip.textContent = '⚠ Could not build ' + filename + ' — try again';
+  }
 }
 
 async function sendReportEmail() {

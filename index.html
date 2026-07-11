@@ -98,7 +98,8 @@
   .two-col { display:flex; gap:24px; flex-wrap:wrap; }
   .two-col > div { flex:1; min-width:280px; }
 
-  .chart-wrap { background:var(--bg-card); border:1px solid var(--border-color); padding:14px; border-radius:10px; }
+  .chart-wrap { background:var(--bg-card); border:1px solid var(--border-color); padding:14px; border-radius:10px; height:300px; display:flex; flex-direction:column; box-sizing:border-box; }
+  .chart-wrap canvas { flex:1; width:100% !important; height:100% !important; }
 
   .table-controls { display:flex; gap:12px; margin-bottom:12px; align-items:center; flex-wrap:wrap; }
   .table-controls input, .table-controls select { padding:8px 12px; font-size:13px; border:1px solid var(--border-color); border-radius:8px; font-family:inherit; background:var(--bg-input); color:var(--text-primary); }
@@ -236,22 +237,21 @@
     <div class="section">
       <div class="section-label">Aging of overdue invoices</div>
       <div class="section-sub">All invoices below are past due. Grouped by how many days past the due date. Any bucket colored red is a control watch item.</div>
-      <div class="two-col">
+      <table>
+        <thead>
+          <tr><th>Bucket</th><th class="amt">Invoices</th><th class="amt">Amount</th><th class="amt">% of Total</th></tr>
+        </thead>
+        <tbody id="agingTableBody"></tbody>
+      </table>
+      <div class="two-col" style="margin-top:20px; align-items:flex-start;">
         <div>
-          <table>
-            <thead>
-              <tr><th>Bucket</th><th class="amt">Invoices</th><th class="amt">Amount</th><th class="amt">% of Total</th></tr>
-            </thead>
-            <tbody id="agingTableBody"></tbody>
-          </table>
-          <div style="margin-top:20px;">
-            <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-secondary); font-weight:700; margin-bottom:8px;">Accounts Receivable by Year</div>
-            <div class="chart-wrap"><canvas id="yearChart" height="170"></canvas></div>
-          </div>
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-secondary); font-weight:700; margin-bottom:8px;">Accounts Receivable by Year</div>
+          <div class="chart-wrap"><canvas id="yearChart"></canvas></div>
         </div>
-        <div style="display:flex; flex-direction:column;">
-          <div class="chart-wrap" style="flex:1; display:flex; flex-direction:column;">
-            <canvas id="agingChart" style="flex:1; width:100%;"></canvas>
+        <div>
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-secondary); font-weight:700; margin-bottom:8px;">Amount by aging bucket</div>
+          <div class="chart-wrap">
+            <canvas id="agingChart"></canvas>
           </div>
         </div>
       </div>

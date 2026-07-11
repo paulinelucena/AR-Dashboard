@@ -123,60 +123,20 @@
 
   .loading { padding:80px var(--gutter); text-align:center; color:var(--text-muted); font-size:14px; }
 
-  /* Floating Style Context */
-  .section.floating-collection {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    width: 450px;
-    max-width: calc(100vw - 48px);
-    background: var(--bg-container);
-    box-shadow: 0 12px 36px rgba(0,0,0,0.35);
-    border: 2px solid var(--purple);
-    border-radius: 16px;
-    z-index: 1000;
-    padding: 24px;
-    box-sizing: border-box;
-  }
-  .section.floating-collection .section-sub { width: 100%; }
-  .section.floating-collection #collectionDragHandle { cursor: move; touch-action: none; -webkit-user-select: none; user-select: none; }
-  .section.floating-collection.dragging { user-select: none; }
-
-  /* Minimal Top-Right Action Button */
-  .section-header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-  }
-  .minimal-freeze-btn {
-    background: transparent;
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.15s ease;
-    white-space: nowrap;
-  }
-  .minimal-freeze-btn:hover {
-    background: var(--bg-card-hover);
-    border-color: var(--purple);
-    color: var(--purple);
-  }
-  .minimal-freeze-btn.active {
-    background: #FDECEA;
-    border-color: var(--danger);
-    color: var(--danger);
-  }
-
   @media print {
     body { background:#FFFFFF; }
     .section { page-break-inside: avoid; }
     .setup-banner, .refresh-btn { display:none; }
+  }
+
+  @media (max-width: 640px) {
+    .header { flex-direction: column; align-items: flex-start; gap: 14px; }
+    .header > div:last-child { width: 100%; display: flex; }
+    .theme-toggle-btn, #refreshBtn { flex: 1; text-align: center; }
+    .kpi-strip { grid-template-columns: 1fr; }
+    .two-col { flex-direction: column; }
+    .table-controls { flex-direction: column; align-items: stretch; }
+    .table-controls input, .table-controls select, .table-controls button { width: 100%; box-sizing: border-box; }
   }
 
   /* SEND REPORT MODAL */
@@ -398,33 +358,32 @@
     </div>
 
     <!-- COLLECTION REPORTS -->
-    <div class="section" id="secCollectionReports">
-      <div class="section-header-row" id="collectionDragHandle">
-        <div>
-          <div class="section-label">Collection reports by rep</div>
-          <div class="section-sub">Generates an Excel file for the selected rep: a "QMMonthlyCollectionsReport" tab (all their past-due invoices except legal accounts and not-yet-due invoices, with 60+ day rows highlighted) and a "Legal" tab (their legal-marked accounts).</div>
+    <div class="section collapsed" id="secCollectionReports">
+      <div class="accordion-header" onclick="toggleAccordion('secCollectionReports')">
+        <div class="section-label">Collection reports by rep</div>
+        <div class="section-sub">Generates an Excel file for the selected rep: a "QMMonthlyCollectionsReport" tab (all their past-due invoices except legal accounts and not-yet-due invoices, with 60+ day rows highlighted) and a "Legal" tab (their legal-marked accounts).</div>
+      </div>
+      <div class="accordion-content">
+        <div class="table-controls">
+          <input type="text" id="collectionRepSelect" list="collectionRepOptions" placeholder="Select a rep..." autocomplete="off" style="min-width:240px;">
+          <datalist id="collectionRepOptions"></datalist>
+          <button class="refresh-btn" onclick="downloadRepReport()">Download report for this rep</button>
+          <button class="refresh-btn" style="background:linear-gradient(90deg, var(--navy-mid), var(--navy-deep));" onclick="downloadAllRepReports()">Download all reps (zip)</button>
+          <button class="refresh-btn" style="background:linear-gradient(90deg, var(--purple), var(--blue-accent));" onclick="downloadCompanyReport()">Download company-wide report (all reps combined)</button>
+          <button class="refresh-btn" style="background:linear-gradient(90deg, var(--blue-accent), var(--magenta));" onclick="openSendModal('rep')">✉ Send report to rep</button>
+          <button class="refresh-btn" style="background:linear-gradient(90deg, var(--navy-deep), var(--purple));" onclick="openSendModal('company')">✉ Send company-wide report to me</button>
         </div>
-        <button class="minimal-freeze-btn" id="freezeBtn" onclick="toggleFreezeCollection()">Freeze Window</button>
-      </div>
-      <div class="table-controls">
-        <input type="text" id="collectionRepSelect" list="collectionRepOptions" placeholder="Select a rep..." autocomplete="off" style="min-width:240px;">
-        <datalist id="collectionRepOptions"></datalist>
-        <button class="refresh-btn" onclick="downloadRepReport()">Download report for this rep</button>
-        <button class="refresh-btn" style="background:linear-gradient(90deg, var(--navy-mid), var(--navy-deep));" onclick="downloadAllRepReports()">Download all reps (zip)</button>
-        <button class="refresh-btn" style="background:linear-gradient(90deg, var(--purple), var(--blue-accent));" onclick="downloadCompanyReport()">Download company-wide report (all reps combined)</button>
-        <button class="refresh-btn" style="background:linear-gradient(90deg, var(--blue-accent), var(--magenta));" onclick="openSendModal('rep')">✉ Send report to rep</button>
-        <button class="refresh-btn" style="background:linear-gradient(90deg, var(--navy-deep), var(--purple));" onclick="openSendModal('company')">✉ Send company-wide report to me</button>
-      </div>
-      <div class="section-sub" id="collectionStatus"></div>
-      <div style="margin-top:10px;">
-        <a href="#" onclick="toggleEmailApiSetup(); return false;" style="font-size:12px; color:var(--text-secondary); text-decoration:underline; cursor:pointer;" id="emailApiSetupToggle">⚙ Set up automatic email sending (optional — skips the manual attach step)</a>
-        <div id="emailApiSetupBox" style="display:none; margin-top:10px; padding:14px 16px; background:var(--setup-bg); border-left:4px solid var(--magenta); border-radius:8px; font-size:12px; line-height:1.6; max-width:620px;">
-          Paste the URL of your email-sending backend (a small serverless function that calls Resend/SendGrid on your behalf — GitHub Pages can't hold the API key itself). Once set, "Send report to rep" / "Send company-wide report" will send the email <strong>with the attachment automatically included</strong>, no drag-and-drop needed. Leave blank to keep the current manual download + mail-app flow.
-          <br>
-          <input type="text" id="emailApiUrlInput" placeholder="https://your-worker.your-subdomain.workers.dev" style="width:100%; margin-top:8px; padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); font-family:inherit; font-size:12px; box-sizing:border-box;">
-          <br>
-          <button class="send-btn-secondary" style="margin-top:8px;" onclick="saveEmailApiUrl()" type="button">Save</button>
-          <span id="emailApiSavedNote" style="font-size:11px; color:var(--text-muted); margin-left:8px;"></span>
+        <div class="section-sub" id="collectionStatus"></div>
+        <div style="margin-top:10px;">
+          <a href="#" onclick="toggleEmailApiSetup(); return false;" style="font-size:12px; color:var(--text-secondary); text-decoration:underline; cursor:pointer;" id="emailApiSetupToggle">⚙ Set up automatic email sending (optional — skips the manual attach step)</a>
+          <div id="emailApiSetupBox" style="display:none; margin-top:10px; padding:14px 16px; background:var(--setup-bg); border-left:4px solid var(--magenta); border-radius:8px; font-size:12px; line-height:1.6; max-width:620px;">
+            Paste the URL of your email-sending backend (a small serverless function that calls Resend/SendGrid on your behalf — GitHub Pages can't hold the API key itself). Once set, "Send report to rep" / "Send company-wide report" will send the email <strong>with the attachment automatically included</strong>, no drag-and-drop needed. Leave blank to keep the current manual download + mail-app flow.
+            <br>
+            <input type="text" id="emailApiUrlInput" placeholder="https://your-worker.your-subdomain.workers.dev" style="width:100%; margin-top:8px; padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); font-family:inherit; font-size:12px; box-sizing:border-box;">
+            <br>
+            <button class="send-btn-secondary" style="margin-top:8px;" onclick="saveEmailApiUrl()" type="button">Save</button>
+            <span id="emailApiSavedNote" style="font-size:11px; color:var(--text-muted); margin-left:8px;"></span>
+          </div>
         </div>
       </div>
     </div>
@@ -620,67 +579,6 @@ function toggleAccordion(id) {
   const el = document.getElementById(id);
   if(el) { el.classList.toggle('collapsed'); }
 }
-
-function toggleFreezeCollection() {
-  const el = document.getElementById('secCollectionReports');
-  const btn = document.getElementById('freezeBtn');
-  if (el.classList.contains('floating-collection')) {
-    el.classList.remove('floating-collection');
-    btn.classList.remove('active');
-    btn.textContent = 'Freeze Window';
-    el.style.left = ''; el.style.top = ''; el.style.right = ''; el.style.bottom = '';
-  } else {
-    el.classList.add('floating-collection');
-    btn.classList.add('active');
-    btn.textContent = 'Unfreeze Window';
-  }
-}
-
-(function enableCollectionDrag() {
-  const handle = document.getElementById('collectionDragHandle');
-  const panel = document.getElementById('secCollectionReports');
-  if (!handle || !panel) return;
-  let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
-
-  handle.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('.minimal-freeze-btn')) return;
-    if (!panel.classList.contains('floating-collection')) return;
-    e.preventDefault();
-    const rect = panel.getBoundingClientRect();
-    panel.style.left = rect.left + 'px';
-    panel.style.top = rect.top + 'px';
-    panel.style.right = 'auto';
-    panel.style.bottom = 'auto';
-    dragging = true;
-    startX = e.clientX; startY = e.clientY;
-    startLeft = rect.left; startTop = rect.top;
-    panel.classList.add('dragging');
-    try { handle.setPointerCapture(e.pointerId); } catch(err) {}
-  });
-
-  document.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-    let newLeft = startLeft + dx;
-    let newTop = startTop + dy;
-    const maxLeft = window.innerWidth - panel.offsetWidth - 8;
-    const maxTop = window.innerHeight - panel.offsetHeight - 8;
-    newLeft = Math.max(8, Math.min(newLeft, maxLeft));
-    newTop = Math.max(8, Math.min(newTop, maxTop));
-    panel.style.left = newLeft + 'px';
-    panel.style.top = newTop + 'px';
-  });
-
-  function stopDrag(e) {
-    if (!dragging) return;
-    dragging = false;
-    panel.classList.remove('dragging');
-    try { handle.releasePointerCapture(e.pointerId); } catch(err) {}
-  }
-  document.addEventListener('pointerup', stopDrag);
-  document.addEventListener('pointercancel', stopDrag);
-})();
 
 function currentThemeColors() {
   const styles = getComputedStyle(document.documentElement);
@@ -1273,8 +1171,8 @@ async function buildCompanyWorkbook() {
     to: { row: monthlyHeaderRowIdx, column: monthlyHeaders.length }
   };
 
-  const legalHeaders = ['Customer','Invoice #','Invoice Date','Due Date','Rep','Amount','Days Overdue (Age)','Ref #','Notes'];
-  const legalColWidths = [32, 14, 13, 13, 20, 14, 16, 14, 28];
+  const legalHeaders = ['Customer','Invoice Date','Invoice Number','Date Due','Amount Due','Sales Rep','No. Days Overdue','Reference Number','Note'];
+  const legalColWidths = [32, 13, 14, 13, 14, 20, 16, 16, 28];
 
   function fillLegalSheet(ws, rows) {
     const headerRowIdx = 1;
@@ -1288,12 +1186,12 @@ async function buildCompanyWorkbook() {
 
     rows.forEach((r, idx) => {
       const rowIdx = headerRowIdx + 1 + idx;
-      const values = [r.customer, r.invoice_num, r.invoice_date, r.date_due, r.rep, r.amount, r.days_overdue, r.ref_num, r.notes];
+      const values = [r.customer, r.invoice_date, r.invoice_num, r.date_due, r.amount, r.rep, r.days_overdue, r.ref_num, r.notes];
       values.forEach((v, i) => {
         const c = ws.getCell(rowIdx, i+1);
         c.value = v;
         c.font = { name:'Arial', size:10 };
-        if (i === 5) c.numFmt = '$#,##0.00';
+        if (i === 4) c.numFmt = '$#,##0.00';
         if (i === 6) c.alignment = { horizontal:'center' };
       });
     });

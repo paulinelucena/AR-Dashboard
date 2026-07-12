@@ -135,7 +135,8 @@
     .header > div:last-child { width: 100%; display: flex; }
     .theme-toggle-btn, #refreshBtn { flex: 1; text-align: center; }
     .kpi-strip { grid-template-columns: 1fr; padding: 18px var(--gutter); gap: 12px; }
-    .two-col { flex-direction: column; gap: 16px; }
+    .two-col { flex-direction: column; gap: 16px; align-items: stretch; }
+    .two-col > div { width: 100%; min-width: 0; box-sizing: border-box; }
     .section { padding: 18px var(--gutter); }
     .table-controls { flex-direction: column; align-items: stretch; }
     .table-controls input, .table-controls select, .table-controls button { width: 100%; box-sizing: border-box; }
@@ -148,7 +149,8 @@
   html.mobile-layout .header > div:last-child { width: 100%; display: flex; }
   html.mobile-layout .theme-toggle-btn, html.mobile-layout #refreshBtn { flex: 1; text-align: center; }
   html.mobile-layout .kpi-strip { grid-template-columns: 1fr; padding: 18px var(--gutter); gap: 12px; }
-  html.mobile-layout .two-col { flex-direction: column; gap: 16px; }
+  html.mobile-layout .two-col { flex-direction: column; gap: 16px; align-items: stretch; }
+  html.mobile-layout .two-col > div { width: 100%; min-width: 0; box-sizing: border-box; }
   html.mobile-layout .section { padding: 18px var(--gutter); }
   html.mobile-layout .table-controls { flex-direction: column; align-items: stretch; }
   html.mobile-layout .table-controls input, html.mobile-layout .table-controls select, html.mobile-layout .table-controls button { width: 100%; box-sizing: border-box; }
@@ -1707,14 +1709,12 @@ document.getElementById('filePreviewOverlay').addEventListener('click', function
   if (e.target === this) closeFilePreview();
 });
 
-// Detect real device screen size (not the CSS viewport), so the clean mobile layout
-// still applies even when the browser's "Request Desktop Site" mode spoofs a wide
-// viewport that normal @media queries can't see past.
+// Applies the compact mobile layout only when the browser's actual viewport is narrow.
+// If "Request Desktop Site" is on, the viewport is intentionally wide, so this correctly
+// leaves the full desktop layout in place instead of forcing mobile stacking on top of it.
 function updateMobileLayoutClass() {
-  const smallestSide = Math.min(window.screen.width, window.screen.height);
-  const isPhoneHardware = smallestSide > 0 && smallestSide <= 640;
   const isNarrowViewport = window.matchMedia('(max-width: 640px)').matches;
-  document.documentElement.classList.toggle('mobile-layout', isPhoneHardware || isNarrowViewport);
+  document.documentElement.classList.toggle('mobile-layout', isNarrowViewport);
 }
 updateMobileLayoutClass();
 window.addEventListener('resize', updateMobileLayoutClass);

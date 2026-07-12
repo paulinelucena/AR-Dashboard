@@ -141,6 +141,19 @@
     .table-controls input, .table-controls select, .table-controls button { width: 100%; box-sizing: border-box; }
     .chart-wrap { height: 260px; }
   }
+  /* Mobile layout rules — ALSO driven by the .mobile-layout class (added by JS based on the
+     real device screen size), so this still applies even if the browser is forced into
+     "Request Desktop Site" mode, which fools plain CSS media queries above. */
+  html.mobile-layout .header { flex-direction: column; align-items: flex-start; gap: 14px; padding: 22px var(--gutter); }
+  html.mobile-layout .header > div:last-child { width: 100%; display: flex; }
+  html.mobile-layout .theme-toggle-btn, html.mobile-layout #refreshBtn { flex: 1; text-align: center; }
+  html.mobile-layout .kpi-strip { grid-template-columns: 1fr; padding: 18px var(--gutter); gap: 12px; }
+  html.mobile-layout .two-col { flex-direction: column; gap: 16px; }
+  html.mobile-layout .section { padding: 18px var(--gutter); }
+  html.mobile-layout .table-controls { flex-direction: column; align-items: stretch; }
+  html.mobile-layout .table-controls input, html.mobile-layout .table-controls select, html.mobile-layout .table-controls button { width: 100%; box-sizing: border-box; }
+  html.mobile-layout .chart-wrap { height: 260px; }
+  html.mobile-layout .container { max-width: 100vw; overflow-x: hidden; }
 
   /* SEND REPORT MODAL */
   .send-modal-overlay { display:none; position:fixed; inset:0; background:rgba(8,10,28,0.65); z-index:1000; align-items:center; justify-content:center; padding:20px; }
@@ -1693,6 +1706,19 @@ document.getElementById('sendModalOverlay').addEventListener('click', function(e
 document.getElementById('filePreviewOverlay').addEventListener('click', function(e) {
   if (e.target === this) closeFilePreview();
 });
+
+// Detect real device screen size (not the CSS viewport), so the clean mobile layout
+// still applies even when the browser's "Request Desktop Site" mode spoofs a wide
+// viewport that normal @media queries can't see past.
+function updateMobileLayoutClass() {
+  const smallestSide = Math.min(window.screen.width, window.screen.height);
+  const isPhoneHardware = smallestSide > 0 && smallestSide <= 640;
+  const isNarrowViewport = window.matchMedia('(max-width: 640px)').matches;
+  document.documentElement.classList.toggle('mobile-layout', isPhoneHardware || isNarrowViewport);
+}
+updateMobileLayoutClass();
+window.addEventListener('resize', updateMobileLayoutClass);
+window.addEventListener('orientationchange', updateMobileLayoutClass);
 
 if (SHEET_CSV_URL) { document.getElementById('sheetUrlInput').value = SHEET_CSV_URL; }
 document.getElementById('emailApiUrlInput').value = getEmailApiUrl();

@@ -749,7 +749,7 @@ function renderAging() {
     data: { labels: BUCKET_ORDER, datasets: [{ label: 'Amount Due', data: chartData, backgroundColor: BUCKET_ORDER.map(b => BUCKET_COLORS[b]), borderRadius: 4 }] },
     options: {
       responsive: true, maintainAspectRatio: false,
-      layout: { padding: { top: 24 } },
+      layout: { padding: { top: 30, right: 36 } },
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => '$' + ctx.parsed.y.toLocaleString() } } },
       scales: {
         y: { ticks: { callback: (v) => '$' + (v/1000).toFixed(0) + 'K', color: colors.text }, grid: { color: colors.grid } },
@@ -759,17 +759,24 @@ function renderAging() {
     plugins: [{
       id: 'agingValueLabels',
       afterDatasetsDraw(chart) {
-        const { ctx } = chart;
+        const { ctx, width } = chart;
+        const fontSize = width < 380 ? 10 : 12;
         chart.data.datasets.forEach((dataset, i) => {
           const meta = chart.getDatasetMeta(i);
           meta.data.forEach((bar, index) => {
             const value = dataset.data[index];
             if (value == null) return;
+            const text = '$' + Math.round(value).toLocaleString();
             ctx.save();
             ctx.fillStyle = colors.textStrong;
-            ctx.font = '600 12px Sora, Arial, sans-serif';
+            ctx.font = '600 ' + fontSize + 'px Sora, Arial, sans-serif';
+            const textWidth = ctx.measureText(text).width;
+            let x = bar.x;
+            const halfText = textWidth / 2;
+            if (x - halfText < 2) x = halfText + 2;
+            if (x + halfText > width - 2) x = width - halfText - 2;
             ctx.textAlign = 'center';
-            ctx.fillText('$' + Math.round(value).toLocaleString(), bar.x, bar.y - 8);
+            ctx.fillText(text, x, bar.y - 8);
             ctx.restore();
           });
         });
@@ -799,6 +806,7 @@ function renderYearChart() {
     data: { labels: years, datasets: [{ label: 'Amount Due', data: values, backgroundColor: '#2F63C7', borderRadius: 4 }] },
     options: {
       responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 26, right: 36 } },
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: { label: (ctx) => '$' + Math.round(ctx.parsed.y).toLocaleString() } }
@@ -811,17 +819,24 @@ function renderYearChart() {
     plugins: [{
       id: 'yearValueLabels',
       afterDatasetsDraw(chart) {
-        const { ctx } = chart;
+        const { ctx, width } = chart;
+        const fontSize = width < 380 ? 10 : 11;
         chart.data.datasets.forEach((dataset, i) => {
           const meta = chart.getDatasetMeta(i);
           meta.data.forEach((bar, index) => {
             const value = dataset.data[index];
             if (value == null) return;
+            const text = '$' + Math.round(value).toLocaleString();
             ctx.save();
             ctx.fillStyle = colors.textStrong;
-            ctx.font = '600 11px Sora, Arial, sans-serif';
+            ctx.font = '600 ' + fontSize + 'px Sora, Arial, sans-serif';
+            const textWidth = ctx.measureText(text).width;
+            let x = bar.x;
+            const halfText = textWidth / 2;
+            if (x - halfText < 2) x = halfText + 2;
+            if (x + halfText > width - 2) x = width - halfText - 2;
             ctx.textAlign = 'center';
-            ctx.fillText('$' + Math.round(value).toLocaleString(), bar.x, bar.y - 6);
+            ctx.fillText(text, x, bar.y - 6);
             ctx.restore();
           });
         });

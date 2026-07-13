@@ -1540,6 +1540,12 @@ function renderWorksheetToHTML(ws) {
         if (hasFill || !isDarkTheme || !isColorDark(hex)) {
           style += 'color:' + hex + ';';
         }
+      } else if (hasFill) {
+        // No font color was authored for this cell, only a fill (this is how the 60+ day
+        // yellow-highlight rows are written). Don't let it inherit the dark theme's near-white
+        // default text color — pick dark or light text based on how bright the fill itself is.
+        const fillHex = '#' + fill.fgColor.argb.slice(2);
+        style += 'color:' + (isColorDark(fillHex) ? '#FFFFFF' : '#1B1338') + ';';
       }
       if (cell.alignment && cell.alignment.horizontal) style += 'text-align:' + cell.alignment.horizontal + ';';
       const span = spanMap[key];

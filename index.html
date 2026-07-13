@@ -143,6 +143,22 @@
     .table-controls input, .table-controls select, .table-controls button { width: 100%; box-sizing: border-box; }
     .chart-wrap { height: 260px; }
   }
+  /* "Request Desktop Site" on a phone rules — the browser reports a real layout viewport
+     somewhere around 940–1024px in this mode, so plain media queries DO work here (unlike
+     the 640px breakpoint above). Without this, the KPI grid's auto-fit rule fits exactly
+     3 cards per row at this width and wraps the 4th onto its own full-width row, which is
+     the uneven 3-then-1 stack + oversized gutters seen on narrow physical screens. */
+  @media (min-width: 641px) and (max-width: 1024px) {
+    .header { padding: 26px clamp(16px, 4vw, 32px); }
+    .header .title { font-size: 26px; }
+    .kpi-strip { grid-template-columns: repeat(2, 1fr); gap: 14px; padding: 22px clamp(16px, 4vw, 32px); }
+    .section { padding: 22px clamp(16px, 4vw, 32px); }
+    .two-col { gap: 16px; }
+    .two-col > div { min-width: 240px; }
+    .chart-wrap { height: 280px; padding: 12px; }
+    .setup-banner, .error-banner { padding: 16px clamp(16px, 4vw, 32px); }
+  }
+
   /* Mobile layout rules — ALSO driven by the .mobile-layout class (added by JS based on the
      real device screen size), so this still applies even if the browser is forced into
      "Request Desktop Site" mode, which fools plain CSS media queries above. */

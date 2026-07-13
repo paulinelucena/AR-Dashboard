@@ -1731,7 +1731,15 @@ document.getElementById('filePreviewOverlay').addEventListener('click', function
 // leaves the full desktop layout in place instead of forcing mobile stacking on top of it.
 function updateMobileLayoutClass() {
   const isNarrowViewport = window.matchMedia('(max-width: 640px)').matches;
-  document.documentElement.classList.toggle('mobile-layout', isNarrowViewport);
+  // screen.width/height reflect the device's real physical screen and are NOT affected by
+  // "Request Desktop Site" (only the layout viewport gets faked wider). Using the smaller of
+  // the two catches phones in either orientation, so we always stack the clean mobile layout
+  // on an actual phone even when the browser is pretending to be desktop-width. This also
+  // avoids the leftover blank space below the footer that shows up in desktop-site mode,
+  // since the desktop grid lays out shorter than the zoomed-out viewport height while the
+  // stacked mobile layout is naturally taller and fills it.
+  const isPhoneScreen = Math.min(window.screen.width, window.screen.height) <= 480;
+  document.documentElement.classList.toggle('mobile-layout', isNarrowViewport || isPhoneScreen);
 }
 updateMobileLayoutClass();
 window.addEventListener('resize', updateMobileLayoutClass);

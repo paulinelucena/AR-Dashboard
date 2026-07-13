@@ -118,6 +118,8 @@
   .full-table th.sort-active::after { content:'▲'; font-size:9px; margin-left:4px; }
   .full-table th.sort-active.sort-desc::after { content:'▼'; }
   .table-scroll { max-height:600px; overflow-y:auto; border:1px solid var(--border-color); border-radius:10px; }
+  .table-scroll-x { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .table-scroll-x table { min-width:600px; }
   .badge { display:inline-block; padding:2px 8px; border-radius:10px; color:#FFFFFF; font-size:10px; font-weight:700; }
 
   .section:last-of-type { padding-bottom: 4px; border-bottom: none; }
@@ -327,12 +329,14 @@
         <div class="section-sub">Sorted by total overdue amount due (highest to lowest). Max days &gt; 90 highlighted in red.</div>
       </div>
       <div class="accordion-content">
-        <table>
-          <thead>
-            <tr><th>#</th><th>Customer</th><th class="amt">Amount Due</th><th class="amt">Invoices</th><th class="amt">Max Days Overdue</th><th>Sales Rep(s)</th></tr>
-          </thead>
-          <tbody id="topCustomersBody"></tbody>
-        </table>
+        <div class="table-scroll table-scroll-x">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Customer</th><th class="amt">Amount Due</th><th class="amt">Invoices</th><th class="amt">Max Days Overdue</th><th>Sales Rep(s)</th></tr>
+            </thead>
+            <tbody id="topCustomersBody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -343,12 +347,14 @@
         <div class="section-sub">Ranked by book of overdue AR (past due invoices only). 90+ % over 30% highlighted in red.</div>
       </div>
       <div class="accordion-content">
-        <table>
-          <thead>
-            <tr><th>Sales Rep</th><th class="amt">Invoices</th><th class="amt">Total AR</th><th class="amt">90+ Days</th><th class="amt">% 90+</th></tr>
-          </thead>
-          <tbody id="repBreakdownBody"></tbody>
-        </table>
+        <div class="table-scroll table-scroll-x">
+          <table>
+            <thead>
+              <tr><th>Sales Rep</th><th class="amt">Invoices</th><th class="amt">Total AR</th><th class="amt">90+ Days</th><th class="amt">% 90+</th></tr>
+            </thead>
+            <tbody id="repBreakdownBody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 

@@ -1085,8 +1085,8 @@ async function buildRepWorkbook(rep) {
     to: { row: monthlyHeaderRowIdx, column: monthlyHeaders.length }
   };
 
-  const legalHeaders = ['Customer','Invoice Date','Invoice Number','Date Due','Amount Due','No. Days Overdue','Reference Number','Note'];
-  const legalColWidths = [32, 13, 14, 13, 14, 16, 16, 28];
+  const legalHeaders = ['Customer','Invoice Date','Invoice Number','Date Due','Amount Due','Sales Rep','No. Days Overdue','Reference Number','Note'];
+  const legalColWidths = [32, 13, 14, 13, 14, 20, 16, 16, 28];
 
   function fillLegalSheet(ws, rows) {
     const headerRowIdx = 1;
@@ -1100,13 +1100,13 @@ async function buildRepWorkbook(rep) {
 
     rows.forEach((r, idx) => {
       const rowIdx = headerRowIdx + 1 + idx;
-      const values = [r.customer, r.invoice_date, r.invoice_num, r.date_due, r.amount, r.days_overdue, r.ref_num, r.notes];
+      const values = [r.customer, r.invoice_date, r.invoice_num, r.date_due, r.amount, r.rep, r.days_overdue, r.ref_num, r.notes];
       values.forEach((v, i) => {
         const c = ws.getCell(rowIdx, i+1);
         c.value = v;
         c.font = { name:'Arial', size:10 };
         if (i === 4) c.numFmt = '$#,##0.00';
-        if (i === 5) c.alignment = { horizontal:'center' };
+        if (i === 6) c.alignment = { horizontal:'center' };
       });
     });
 
@@ -1713,13 +1713,16 @@ async function sendReportEmail() {
       if (cc) mailto += '&cc=' + encodeURIComponent(cc);
       if (bcc) mailto += '&bcc=' + encodeURIComponent(bcc);
 
-      window.location.href = mailto;
-
       if (currentSendMode === 'company' && to) {
         localStorage.setItem('ar_dashboard_my_email', to);
       }
 
-      statusEl.textContent = 'Downloaded "' + filename + '" and opened your email app for ' + displayName + ' — attach the downloaded file, then hit send.';
+      // A JS-triggered window.location.href navigation to a mailto: link is unreliable in many
+      // browsers and embedded webviews (especially once handed off to Outlook) — it's often
+      // silently swallowed instead of prompting to open the registered mail app. A real,
+      // user-clicked <a href="mailto:..."> link triggers that "open with Outlook" handoff
+      // correctly, so we show one instead of relying on an automatic redirect.
+      statusEl.innerHTML = 'Downloaded "' + filename + '". <a href="' + mailto + '" style="color:var(--blue-accent); text-decoration:underline; font-weight:600;">Click here to open a new email draft</a> for ' + displayName + ' — attach the downloaded file, then hit send.';
       closeSendModal();
     }
   } catch (err) {

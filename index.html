@@ -1681,6 +1681,25 @@ async function sendReportEmail() {
   finalBtn.disabled = true;
   finalBtn.textContent = 'Building report...';
 
+  // If we're falling back to the user's own email app (no send API configured), open the
+  // mailto handoff RIGHT NOW, synchronously, before any of the async report-building work
+  // below. Browsers tie permission to hand off to a protocol handler (like Outlook) to the
+  // original click — every `await` we run first burns through that "direct click" trust, so
+  // by the time a mailto: navigation fired after the file was built, it was too stale for the
+  // browser to honor and got silently dropped instead of opening Outlook. Firing it first,
+  // via a real clicked anchor rather than location.href, keeps that trust intact.
+  if (!apiUrl) {
+    let mailto = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    if (cc) mailto += '&cc=' + encodeURIComponent(cc);
+    if (bcc) mailto += '&bcc=' + encodeURIComponent(bcc);
+    const a = document.createElement('a');
+    a.href = mailto;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
   try {
     const wb = currentSendMode === 'company' ? await buildCompanyWorkbook() : await buildRepWorkbook(rep);
     const buf = await wb.xlsx.writeBuffer();
@@ -1709,20 +1728,11 @@ async function sendReportEmail() {
     } else {
       triggerBlobDownload(new Blob([buf], {type:'application/octet-stream'}), filename);
 
-      let mailto = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-      if (cc) mailto += '&cc=' + encodeURIComponent(cc);
-      if (bcc) mailto += '&bcc=' + encodeURIComponent(bcc);
-
       if (currentSendMode === 'company' && to) {
         localStorage.setItem('ar_dashboard_my_email', to);
       }
 
-      // A JS-triggered window.location.href navigation to a mailto: link is unreliable in many
-      // browsers and embedded webviews (especially once handed off to Outlook) — it's often
-      // silently swallowed instead of prompting to open the registered mail app. A real,
-      // user-clicked <a href="mailto:..."> link triggers that "open with Outlook" handoff
-      // correctly, so we show one instead of relying on an automatic redirect.
-      statusEl.innerHTML = 'Downloaded "' + filename + '". <a href="' + mailto + '" style="color:var(--blue-accent); text-decoration:underline; font-weight:600;">Click here to open a new email draft</a> for ' + displayName + ' — attach the downloaded file, then hit send.';
+      statusEl.textContent = 'Downloaded "' + filename + '" and opened your email app for ' + displayName + ' — attach the downloaded file, then hit send.';
       closeSendModal();
     }
   } catch (err) {

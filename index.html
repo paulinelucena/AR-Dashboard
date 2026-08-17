@@ -405,6 +405,11 @@
         <div class="section-sub">Generates an Excel file for the selected rep: a "QMMonthlyCollectionsReport" tab (all their past-due invoices except legal accounts and not-yet-due invoices, with 60+ day rows highlighted) and a "Legal" tab (their legal-marked accounts).</div>
       </div>
       <div class="accordion-content">
+        <div class="table-controls" style="margin-bottom:6px;">
+          <label for="reportDateInput" style="font-size:12px; color:var(--text-secondary); font-weight:600; white-space:nowrap;">Report date:</label>
+          <input type="date" id="reportDateInput" style="max-width:180px;">
+          <a href="#" onclick="document.getElementById('reportDateInput').value=''; return false;" style="font-size:12px; color:var(--text-secondary); text-decoration:underline; cursor:pointer;">Reset to today</a>
+        </div>
         <div class="table-controls">
           <input type="text" id="collectionRepSelect" list="collectionRepOptions" placeholder="Select a rep..." autocomplete="off" style="min-width:240px;">
           <datalist id="collectionRepOptions"></datalist>
@@ -1007,8 +1012,17 @@ function safeFileName(name) {
   return (name || 'Unassigned').replace(/[^A-Za-z0-9 _-]/g, '').trim().replace(/\s+/g, '_');
 }
 
+function getReportDate() {
+  const val = document.getElementById('reportDateInput') ? document.getElementById('reportDateInput').value : '';
+  if (val) {
+    const parts = val.split('-'); // yyyy-mm-dd from <input type="date">
+    if (parts.length === 3) return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+  }
+  return new Date();
+}
+
 function reportDatePrefix() {
-  const d = new Date();
+  const d = getReportDate();
   const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const month = monthNames[d.getMonth()];
   const mm = String(d.getMonth()+1).padStart(2,'0');
@@ -1032,7 +1046,7 @@ async function buildRepWorkbook(rep) {
 
   const ws1 = wb.addWorksheet('QMMonthlyCollectionsReport');
 
-  const d = new Date();
+  const d = getReportDate();
   const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const asOfDate = monthNames[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
 
@@ -1174,7 +1188,7 @@ async function buildCompanyWorkbook() {
 
   const ws1 = wb.addWorksheet('QMMonthlyCollectionsReport');
 
-  const d = new Date();
+  const d = getReportDate();
   const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const asOfDate = monthNames[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
 
@@ -1277,6 +1291,7 @@ const DEFAULT_EMAIL_SUBJECT = 'Q1Media - Collections Report as of {{date}} - {{r
 const DEFAULT_EMAIL_CC = 'jaime.skalla@q1media.com, accounting@q1media.com';
 const DEFAULT_SENDER_NAME = 'Pauline Lucena';
 const DEFAULT_SENDER_TITLE = 'Accounting Analyst';
+const DEFAULT_COMPANY_REPORT_EMAIL = 'Luke.mydlarz@Q1Media.com';
 const DEFAULT_EMAIL_BODY =
 '{{rep_first}},\n\n' +
 'All accounts that are beyond 60 days will need to be contacted. Please send an email to accounting@q1media.com with payment status. Thank you!!\n\n' +
@@ -1393,7 +1408,7 @@ function openSendModal(mode) {
 
   document.getElementById('sendRepName').value = mode === 'company' ? 'All Reps (Company-wide report)' : rep;
   document.getElementById('sendTo').value = mode === 'company'
-    ? (localStorage.getItem('ar_dashboard_my_email') || '')
+    ? (localStorage.getItem('ar_dashboard_my_email') || DEFAULT_COMPANY_REPORT_EMAIL)
     : getRepEmail(rep);
   document.getElementById('sendBcc').value = '';
 

@@ -1408,7 +1408,7 @@ function openSendModal(mode) {
 
   document.getElementById('sendRepName').value = mode === 'company' ? 'All Reps (Company-wide report)' : rep;
   document.getElementById('sendTo').value = mode === 'company'
-    ? (localStorage.getItem('ar_dashboard_my_email') || DEFAULT_COMPANY_REPORT_EMAIL)
+    ? DEFAULT_COMPANY_REPORT_EMAIL
     : getRepEmail(rep);
   document.getElementById('sendBcc').value = '';
 
@@ -1734,18 +1734,10 @@ async function sendReportEmail() {
         throw new Error(result.error || ('Email API returned status ' + resp.status));
       }
 
-      if (currentSendMode === 'company' && to) {
-        localStorage.setItem('ar_dashboard_my_email', to);
-      }
-
       statusEl.textContent = 'Email sent to ' + displayName + ' with "' + filename + '" attached ✓';
       closeSendModal();
     } else {
       triggerBlobDownload(new Blob([buf], {type:'application/octet-stream'}), filename);
-
-      if (currentSendMode === 'company' && to) {
-        localStorage.setItem('ar_dashboard_my_email', to);
-      }
 
       statusEl.textContent = 'Downloaded "' + filename + '" and opened your email app for ' + displayName + ' — attach the downloaded file, then hit send.';
       closeSendModal();
